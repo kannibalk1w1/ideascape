@@ -52,7 +52,9 @@
         source: edgeEndpointId(edge.source),
         target: edgeEndpointId(edge.target),
         locked: edge.locked,
-        kind: edge.kind || 'association'
+        kind: edge.kind || 'association',
+        style: edge.style || defaultEdgeStyle(edge.kind || 'association'),
+        direction: edge.direction || defaultEdgeDirection(edge.kind || 'association')
       }))
     };
   }
@@ -109,7 +111,7 @@
 
   function loadGraph(graph) {
     nodes = graph.nodes.map(node => ({ collapsed: false, ...node }));
-    edges = graph.edges.map(edge => ({ kind: 'association', ...edge }));
+    edges = graph.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
     settings = { ...defaultSettings(), ...(graph.settings || {}) };
     settings.palette = { ...defaultSettings().palette, ...(graph.settings?.palette || {}) };
     settings.background = { ...defaultSettings().background, ...(graph.settings?.background || {}) };
@@ -163,7 +165,25 @@
     return node;
   }
 
-  function addEdge({ source, target, locked = false, kind = 'association' }) {
+  function defaultEdgeStyle(kind) {
+    return kind === 'hierarchy' ? 'solid' : 'dashed';
+  }
+
+  function defaultEdgeDirection(kind) {
+    return kind === 'hierarchy' ? 'forward' : 'none';
+  }
+
+  function normaliseEdge(edge) {
+    const kind = edge.kind || 'association';
+    return {
+      ...edge,
+      kind,
+      style: edge.style || defaultEdgeStyle(kind),
+      direction: edge.direction || defaultEdgeDirection(kind)
+    };
+  }
+
+  function addEdge({ source, target, locked = false, kind = 'association', style, direction }) {
     const sourceId = edgeEndpointId(source);
     const targetId = edgeEndpointId(target);
     if (!sourceId || !targetId || sourceId === targetId) return null;
@@ -174,7 +194,7 @@
     });
     if (exists) return null;
     snapshot();
-    const edge = { id: uuid(), source: sourceId, target: targetId, locked, kind };
+    const edge = normaliseEdge({ id: uuid(), source: sourceId, target: targetId, locked, kind, style, direction });
     edges.push(edge);
     syncPins();
     return edge;
@@ -214,7 +234,7 @@
     if (undoStack.length === 0) return false;
     const previous = JSON.parse(undoStack.pop());
     nodes = previous.nodes.map(node => ({ collapsed: false, ...node }));
-    edges = previous.edges.map(edge => ({ kind: 'association', ...edge }));
+    edges = previous.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
     settings = previous.settings || settings;
     return true;
   }
@@ -282,6 +302,16 @@
     const edge = edges.find(item => item.id === id);
     if (!edge) return null;
     edge.kind = kind;
+    if (!edge.style) edge.style = defaultEdgeStyle(kind);
+    if (!edge.direction || edge.direction === 'none' && kind === 'hierarchy') edge.direction = defaultEdgeDirection(kind);
+    return edge;
+  }
+
+  function updateEdge(id, patch) {
+    snapshot();
+    const edge = edges.find(item => item.id === id);
+    if (!edge) return null;
+    Object.assign(edge, patch);
     return edge;
   }
 
@@ -355,6 +385,7 @@
     visibleNodeIds,
     toggleCollapsed,
     setEdgeKind,
+    updateEdge,
     removeBranch,
     eligibleOrbitPairs,
     getSettings: () => settings,

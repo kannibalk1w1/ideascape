@@ -214,7 +214,6 @@ button:hover {
 }
 
 .edge.floating {
-  stroke-dasharray: 5, 4;
   opacity: 0.42;
 }
 
@@ -229,6 +228,28 @@ button:hover {
 
 .edge.association {
   stroke-linecap: round;
+}
+
+.edge.dashed {
+  stroke-dasharray: 7, 5;
+}
+
+.edge.dotted {
+  stroke-dasharray: 1, 7;
+}
+
+.edge.solid,
+.edge.thick,
+.edge.faint {
+  stroke-dasharray: none;
+}
+
+.edge.faint {
+  opacity: 0.22;
+}
+
+#arrow-forward path {
+  fill: context-stroke;
 }
 
 .edge.hit-area {

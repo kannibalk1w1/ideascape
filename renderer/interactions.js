@@ -112,6 +112,17 @@
         { label: edge.locked ? 'Unlock connection' : 'Lock connection', action: edge.locked ? 'unlock-edge' : 'lock-edge' },
         { label: edge.kind === 'hierarchy' ? 'Make association link' : 'Make hierarchy link', action: edge.kind === 'hierarchy' ? 'make-association' : 'make-hierarchy' },
         'sep',
+        { label: 'Style: Solid', action: 'edge-style-solid' },
+        { label: 'Style: Dashed', action: 'edge-style-dashed' },
+        { label: 'Style: Dotted', action: 'edge-style-dotted' },
+        { label: 'Style: Thick', action: 'edge-style-thick' },
+        { label: 'Style: Faint', action: 'edge-style-faint' },
+        'sep',
+        { label: 'Direction: None', action: 'edge-dir-none' },
+        { label: 'Direction: To target', action: 'edge-dir-forward' },
+        { label: 'Direction: To source', action: 'edge-dir-backward' },
+        { label: 'Direction: Both ways', action: 'edge-dir-both' },
+        'sep',
         { label: 'Delete connection', action: 'delete-edge', danger: true }
       ]
     });
@@ -357,6 +368,14 @@
         state.setEdgeKind(target.id, action === 'make-hierarchy' ? 'hierarchy' : 'association');
         graph.render();
         mindmap.renderOutline();
+      }
+      if (action.startsWith('edge-style-')) {
+        state.updateEdge(target.id, { style: action.replace('edge-style-', '') });
+        graph.render();
+      }
+      if (action.startsWith('edge-dir-')) {
+        state.updateEdge(target.id, { direction: action.replace('edge-dir-', '') });
+        graph.render();
       }
       if (action === 'delete-selected') {
         target.ids.forEach(id => state.removeNode(id));

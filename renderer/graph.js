@@ -71,9 +71,11 @@
       .append('line')
       .attr('class', 'edge visual')
       .merge(visual)
-      .attr('class', edge => `edge visual ${edge.locked ? 'locked' : 'floating'} ${edge.kind || 'association'}`)
+      .attr('class', edge => `edge visual ${edge.locked ? 'locked' : 'floating'} ${edge.kind || 'association'} ${edge.style || 'solid'}`)
       .attr('stroke', edge => edgeColour(edge))
-      .attr('stroke-width', edge => (edge.kind === 'hierarchy' ? 2.4 : 1.7) + (edge.locked ? 0.8 : 0));
+      .attr('stroke-width', edge => edgeStrokeWidth(edge))
+      .attr('marker-end', edge => edge.direction === 'forward' || edge.direction === 'both' ? 'url(#arrow-forward)' : null)
+      .attr('marker-start', edge => edge.direction === 'backward' || edge.direction === 'both' ? 'url(#arrow-forward)' : null);
     visual.exit().remove();
 
     const hit = svgEdges.selectAll('.edge.hit-area').data(edges, edge => edge.id);
@@ -84,6 +86,13 @@
       .attr('data-id', edge => edge.id)
       .attr('stroke', '#fff');
     hit.exit().remove();
+  }
+
+  function edgeStrokeWidth(edge) {
+    const base = edge.kind === 'hierarchy' ? 2.4 : 1.7;
+    const styleBoost = edge.style === 'thick' ? 2.2 : edge.style === 'faint' ? -0.4 : 0;
+    const lockBoost = edge.locked ? 0.8 : 0;
+    return Math.max(1, base + styleBoost + lockBoost);
   }
 
   function renderNodes() {

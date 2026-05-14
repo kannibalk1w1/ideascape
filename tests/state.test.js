@@ -33,6 +33,25 @@ test('addEdge prevents duplicate undirected edges', () => {
   expect(state.getEdges()).toHaveLength(1);
 });
 
+test('addEdge applies connector defaults by edge kind', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const association = state.addEdge({ source: 'root', target: child.id });
+  expect(association.style).toBe('dashed');
+  expect(association.direction).toBe('none');
+
+  const next = state.addNode({ label: 'Next', x: 0, y: 0 });
+  const hierarchy = state.addEdge({ source: child.id, target: next.id, kind: 'hierarchy' });
+  expect(hierarchy.style).toBe('solid');
+  expect(hierarchy.direction).toBe('forward');
+});
+
+test('updateEdge changes connector style and direction', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const edge = state.addEdge({ source: 'root', target: child.id });
+  state.updateEdge(edge.id, { style: 'dotted', direction: 'both' });
+  expect(state.getEdges()[0]).toMatchObject({ style: 'dotted', direction: 'both' });
+});
+
 test('locking an edge pins both endpoints', () => {
   const node = state.addNode({ label: 'A', x: 50, y: 80 });
   const edge = state.addEdge({ source: 'root', target: node.id });
