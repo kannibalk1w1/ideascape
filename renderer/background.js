@@ -3,6 +3,7 @@
   let ctx;
   let stars = [];
   let comets = [];
+  let ships = [];
   let customImage = null;
   let lastTime = 0;
 
@@ -83,9 +84,12 @@
     const dt = Math.min(50, time - lastTime || 16);
     lastTime = time;
     maybeSpawnComet(dt);
+    maybeSpawnShip(dt);
     updateComets(dt);
+    updateShips(dt);
     render();
     drawComets();
+    drawShips();
     requestAnimationFrame(animate);
   }
 
@@ -116,6 +120,33 @@
     comets = comets.filter(comet => comet.life < comet.maxLife && comet.x > -400 && comet.x < canvas.width + 400 && comet.y < canvas.height + 400);
   }
 
+  function maybeSpawnShip(dt) {
+    const settings = state.getSettings();
+    if (!settings.background.enabled || !settings.effects.shipsEnabled) return;
+    const chance = (settings.effects.shipFrequency || 0) * dt / 14000;
+    if (Math.random() > chance || ships.length > 2) return;
+    const fromLeft = Math.random() > 0.5;
+    const y = canvas.height * (0.16 + Math.random() * 0.68);
+    const scale = (0.7 + Math.random() * 0.8) * devicePixelRatio;
+    ships.push({
+      x: fromLeft ? -90 : canvas.width + 90,
+      y,
+      vx: (fromLeft ? 1 : -1) * (0.12 + Math.random() * 0.2) * devicePixelRatio,
+      vy: (-0.03 + Math.random() * 0.06) * devicePixelRatio,
+      scale,
+      hue: Math.random() > 0.5 ? '#a3e635' : '#67e8f9',
+      fromLeft
+    });
+  }
+
+  function updateShips(dt) {
+    ships.forEach(ship => {
+      ship.x += ship.vx * dt;
+      ship.y += ship.vy * dt;
+    });
+    ships = ships.filter(ship => ship.x > -160 && ship.x < canvas.width + 160 && ship.y > -120 && ship.y < canvas.height + 120);
+  }
+
   function drawComets() {
     const settings = state.getSettings().background;
     if (!settings.enabled || !settings.cometsEnabled) return;
@@ -135,6 +166,39 @@
       ctx.moveTo(comet.x, comet.y);
       ctx.lineTo(comet.x + tx, comet.y + ty);
       ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function drawShips() {
+    const settings = state.getSettings();
+    if (!settings.background.enabled || !settings.effects.shipsEnabled) return;
+    ctx.save();
+    ships.forEach(ship => {
+      ctx.save();
+      ctx.translate(ship.x, ship.y);
+      ctx.scale(ship.fromLeft ? ship.scale : -ship.scale, ship.scale);
+      ctx.globalAlpha = 0.72;
+      ctx.fillStyle = 'rgba(231,236,239,0.9)';
+      ctx.strokeStyle = ship.hue;
+      ctx.lineWidth = 1.2 * devicePixelRatio;
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(-15, -8);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-15, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = ship.hue;
+      ctx.beginPath();
+      ctx.moveTo(-16, -4);
+      ctx.lineTo(-34, 0);
+      ctx.lineTo(-16, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     });
     ctx.restore();
   }

@@ -12,7 +12,7 @@
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
-    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle', 'skin-mode', 'skin-detail', 'skin-rings', 'tint-custom-skins', 'evolution-enabled', 'evolve-rocky', 'evolve-gas', 'evolve-star', 'evolve-black-hole']
+    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'ships-enabled', 'ship-frequency', 'connector-kinetics', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle', 'skin-mode', 'skin-detail', 'skin-rings', 'tint-custom-skins', 'evolution-enabled', 'evolve-rocky', 'evolve-gas', 'evolve-star', 'evolve-black-hole']
       .forEach(id => document.getElementById(id).addEventListener('input', syncFromControls));
 
     render();
@@ -36,6 +36,9 @@
     document.getElementById('comets-enabled').checked = settings.background.cometsEnabled;
     document.getElementById('comet-frequency').value = settings.background.cometFrequency;
     document.getElementById('comet-brightness').value = settings.background.cometBrightness;
+    document.getElementById('ships-enabled').checked = settings.effects.shipsEnabled;
+    document.getElementById('ship-frequency').value = settings.effects.shipFrequency;
+    document.getElementById('connector-kinetics').checked = settings.effects.connectorKinetics;
     document.getElementById('orbit-enabled').checked = settings.orbit.enabled;
     document.getElementById('orbit-idle').value = settings.orbit.idleSeconds;
     document.getElementById('screensaver-enabled').checked = settings.screensaver.enabled;
@@ -80,6 +83,11 @@
       screensaver: {
         enabled: document.getElementById('screensaver-enabled').checked,
         idleSeconds: Number(document.getElementById('screensaver-idle').value)
+      },
+      effects: {
+        shipsEnabled: document.getElementById('ships-enabled').checked,
+        shipFrequency: Number(document.getElementById('ship-frequency').value),
+        connectorKinetics: document.getElementById('connector-kinetics').checked
       },
       skins: {
         mode: document.getElementById('skin-mode').value,

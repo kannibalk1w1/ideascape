@@ -40,6 +40,11 @@
         enabled: true,
         idleSeconds: 45
       },
+      effects: {
+        connectorKinetics: true,
+        shipsEnabled: true,
+        shipFrequency: 0.25
+      },
       skins: {
         mode: 'circles',
         tintCustom: true,
@@ -99,6 +104,7 @@
     merged.background = { ...defaults.background, ...(loaded.background || {}) };
     merged.orbit = { ...defaults.orbit, ...(loaded.orbit || {}) };
     merged.screensaver = { ...defaults.screensaver, ...(loaded.screensaver || {}) };
+    merged.effects = { ...defaults.effects, ...(loaded.effects || {}) };
     merged.skins = { ...defaults.skins, ...(loaded.skins || {}) };
     merged.skins.evolutionThresholds = { ...defaults.skins.evolutionThresholds, ...(loaded.skins?.evolutionThresholds || {}) };
     return merged;
@@ -419,6 +425,7 @@
       background: { ...settings.background, ...(patch.background || {}) },
       orbit: { ...settings.orbit, ...(patch.orbit || {}) },
       screensaver: { ...settings.screensaver, ...(patch.screensaver || {}) },
+      effects: { ...settings.effects, ...(patch.effects || {}) },
       skins: {
         ...settings.skins,
         ...(patch.skins || {}),

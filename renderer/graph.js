@@ -89,6 +89,16 @@
       .attr('marker-start', edge => edge.direction === 'backward' || edge.direction === 'both' ? 'url(#arrow-forward)' : null);
     visual.exit().remove();
 
+    const pulses = svgEdges.selectAll('.edge.pulse').data(state.getSettings().effects.connectorKinetics ? edges : [], edge => edge.id);
+    pulses.enter()
+      .append('line')
+      .attr('class', 'edge pulse')
+      .merge(pulses)
+      .attr('class', edge => `edge pulse ${edge.kind || 'association'} ${edge.style || 'solid'}`)
+      .attr('stroke', edge => edgeColour(edge))
+      .attr('stroke-width', edge => Math.max(2, edgeStrokeWidth(edge) + 0.8));
+    pulses.exit().remove();
+
     const hit = svgEdges.selectAll('.edge.hit-area').data(edges, edge => edge.id);
     hit.enter()
       .append('line')

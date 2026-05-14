@@ -293,6 +293,30 @@ button:hover {
   cursor: context-menu;
 }
 
+.edge.pulse {
+  opacity: 0.45;
+  stroke-linecap: round;
+  stroke-dasharray: 2 18;
+  animation: connector-pulse 2.8s linear infinite;
+  filter: drop-shadow(0 0 5px currentColor);
+  pointer-events: none;
+}
+
+.edge.pulse.association {
+  opacity: 0.28;
+  animation-duration: 3.8s;
+}
+
+@keyframes connector-pulse {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -80;
+  }
+}
+
 .node {
   cursor: grab;
 }
