@@ -22,7 +22,15 @@
         <button id="save-vault">Save</button>
         <button id="export-png">PNG</button>
         <button id="export-gif">GIF</button>
+        <button id="toggle-replay">Replay</button>
         <button id="toggle-options">Options</button>
+      </div>
+
+      <div id="replay-panel" class="hidden">
+        <button id="replay-play">Play</button>
+        <input id="replay-range" type="range" min="0" max="0" value="0">
+        <span id="replay-label">No timeline yet</span>
+        <button id="replay-close">Close</button>
       </div>
 
       <aside id="options-panel" class="hidden">
@@ -174,6 +182,7 @@
   <script src="./mindmap.js"></script>
   <script src="./options.js"></script>
   <script src="./exporter.js"></script>
+  <script src="./replay.js"></script>
   <script src="./interactions.js"></script>
   <script src="./app.js"></script>
 </body>

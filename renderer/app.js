@@ -7,6 +7,7 @@
     mindmap.init();
     options.init();
     exporter.init();
+    replay.init();
     interactions.init();
   });
 }());

@@ -100,6 +100,40 @@ button:hover {
   left: 16px;
 }
 
+#replay-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 45;
+  display: grid;
+  grid-template-columns: auto minmax(180px, 420px) minmax(130px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  width: min(720px, calc(100vw - 32px));
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(16, 18, 20, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+#replay-panel.hidden {
+  display: none;
+}
+
+#replay-range {
+  width: 100%;
+}
+
+#replay-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 #search-panel {
   position: fixed;
   top: 16px;
@@ -497,6 +531,7 @@ body.screensaver-mode {
 
 body.screensaver-mode #zoom-controls,
 body.screensaver-mode #vault-controls,
+body.screensaver-mode #replay-panel,
 body.screensaver-mode #search-panel,
 body.screensaver-mode #outline-panel,
 body.screensaver-mode #options-panel,

@@ -8,6 +8,7 @@
   let svgDefs;
   let idle = false;
   let dragPause = false;
+  let replayFilter = null;
 
   function init() {
     if (state.getNodes().length === 0) state.initRoot(window.innerWidth, window.innerHeight);
@@ -70,7 +71,12 @@
 
   function renderEdges() {
     const visible = state.visibleNodeIds();
-    const edges = state.getEdges().filter(edge => visible.has(state.edgeEndpointId(edge.source)) && visible.has(state.edgeEndpointId(edge.target)));
+    const edges = state.getEdges().filter(edge => {
+      const sourceId = state.edgeEndpointId(edge.source);
+      const targetId = state.edgeEndpointId(edge.target);
+      if (!visible.has(sourceId) || !visible.has(targetId)) return false;
+      return !replayFilter || replayFilter.edgeIds.has(edge.id);
+    });
     const visual = svgEdges.selectAll('.edge.visual').data(edges, edge => edge.id);
     visual.enter()
       .append('line')
@@ -102,7 +108,7 @@
 
   function renderNodes() {
     const visible = state.visibleNodeIds();
-    const groups = svgNodes.selectAll('.node').data(state.getNodes().filter(node => visible.has(node.id)), node => node.id);
+    const groups = svgNodes.selectAll('.node').data(state.getNodes().filter(node => visible.has(node.id) && (!replayFilter || replayFilter.nodeIds.has(node.id))), node => node.id);
     const entered = groups.enter()
       .append('g')
       .attr('class', 'node')
@@ -314,9 +320,19 @@
 
   function restart() {
     const visible = state.visibleNodeIds();
-    simulation.nodes(state.getNodes().filter(node => visible.has(node.id)));
-    simulation.force('link').links(state.getEdges().filter(edge => visible.has(state.edgeEndpointId(edge.source)) && visible.has(state.edgeEndpointId(edge.target))));
+    simulation.nodes(state.getNodes().filter(node => visible.has(node.id) && (!replayFilter || replayFilter.nodeIds.has(node.id))));
+    simulation.force('link').links(state.getEdges().filter(edge => {
+      const sourceId = state.edgeEndpointId(edge.source);
+      const targetId = state.edgeEndpointId(edge.target);
+      if (!visible.has(sourceId) || !visible.has(targetId)) return false;
+      return !replayFilter || replayFilter.edgeIds.has(edge.id);
+    }));
     simulation.alpha(0.3).restart();
+  }
+
+  function setReplayFilter(filter) {
+    replayFilter = filter;
+    render();
   }
 
   function setDragPause(paused) {
@@ -368,6 +384,7 @@
     fitView,
     setIdle,
     setDragPause,
+    setReplayFilter,
     pulseNode,
     getZoom: () => zoom,
     getZoomTransform: () => zoomTransform,

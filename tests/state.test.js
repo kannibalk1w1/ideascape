@@ -107,6 +107,22 @@ test('redo reapplies an undone graph snapshot and clears after new edits', () =>
   expect(state.redo()).toBe(false);
 });
 
+test('replay steps track node and edge additions and persist with the graph', () => {
+  const node = state.addNode({ label: 'Timeline', x: 0, y: 0 });
+  const edge = state.addEdge({ source: 'root', target: node.id, kind: 'hierarchy' });
+  const steps = state.replaySteps();
+
+  expect(steps.map(step => step.event.type)).toEqual(['node', 'node', 'edge']);
+  expect(steps[1].nodeIds.has(node.id)).toBe(true);
+  expect(steps[1].edgeIds.has(edge.id)).toBe(false);
+  expect(steps[2].edgeIds.has(edge.id)).toBe(true);
+
+  const graph = state.cloneGraph();
+  state.initRoot(800, 600);
+  state.loadGraph(graph);
+  expect(state.replaySteps()).toHaveLength(3);
+});
+
 test('updateNodeContent does not add graph undo snapshots', () => {
   const node = state.addNode({ label: 'Note', x: 0, y: 0 });
   state.updateNodeContent(node.id, '# Changed');

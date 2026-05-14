@@ -6,6 +6,7 @@
   let edges = [];
   let undoStack = [];
   let redoStack = [];
+  let timeline = [];
   let paletteIndex = 0;
   let activeVaultPath = null;
   let settings = defaultSettings();
@@ -79,7 +80,8 @@
         kind: edge.kind || 'association',
         style: edge.style || defaultEdgeStyle(edge.kind || 'association'),
         direction: edge.direction || defaultEdgeDirection(edge.kind || 'association')
-      }))
+      })),
+      timeline: timeline.map(event => ({ ...event }))
     };
   }
 
@@ -106,7 +108,37 @@
     nodes = graph.nodes.map(node => ({ collapsed: false, skin: { type: 'circle' }, ...node }));
     edges = graph.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
     settings = mergeSettings(graph.settings || {});
+    timeline = normaliseTimeline(graph.timeline);
     syncPins();
+  }
+
+  function normaliseTimeline(loaded) {
+    if (Array.isArray(loaded) && loaded.length) return loaded.map(event => ({ ...event }));
+    return [
+      ...nodes.map(node => ({
+        id: `timeline-${node.id}`,
+        type: 'node',
+        nodeId: node.id,
+        label: node.label,
+        at: node.createdAt || null
+      })),
+      ...edges.map(edge => ({
+        id: `timeline-${edge.id}`,
+        type: 'edge',
+        edgeId: edge.id,
+        source: edgeEndpointId(edge.source),
+        target: edgeEndpointId(edge.target),
+        at: edge.createdAt || null
+      }))
+    ];
+  }
+
+  function recordTimeline(event) {
+    timeline.push({
+      id: uuid(),
+      at: new Date().toISOString(),
+      ...event
+    });
   }
 
   function lockedNodeIds() {
@@ -152,6 +184,13 @@
     edges = [];
     undoStack = [];
     redoStack = [];
+    timeline = [{
+      id: 'timeline-root',
+      type: 'node',
+      nodeId: 'root',
+      label: 'My Ideascape',
+      at: new Date().toISOString()
+    }];
     paletteIndex = 0;
     settings = defaultSettings();
   }
@@ -181,6 +220,7 @@
       skin: defaultNodeSkin()
     };
     nodes.push(node);
+    recordTimeline({ type: 'node', nodeId: node.id, label: node.label });
     return node;
   }
 
@@ -239,6 +279,7 @@
     snapshot();
     const edge = normaliseEdge({ id: uuid(), source: sourceId, target: targetId, locked, kind, style, direction });
     edges.push(edge);
+    recordTimeline({ type: 'edge', edgeId: edge.id, source: sourceId, target: targetId });
     syncPins();
     return edge;
   }
@@ -482,6 +523,25 @@
     return 'planetoid';
   }
 
+  function replaySteps() {
+    const nodeIds = new Set();
+    const edgeIds = new Set();
+    return timeline.map((event, index) => {
+      if (event.type === 'node' && getNode(event.nodeId)) nodeIds.add(event.nodeId);
+      if (event.type === 'edge' && edges.some(edge => edge.id === event.edgeId)) edgeIds.add(event.edgeId);
+      const label = event.type === 'node'
+        ? `Added ${getNode(event.nodeId)?.label || event.label || 'node'}`
+        : `Connected ${getNode(event.source)?.label || 'node'} to ${getNode(event.target)?.label || 'node'}`;
+      return {
+        index,
+        label,
+        event: { ...event },
+        nodeIds: new Set(nodeIds),
+        edgeIds: new Set(edgeIds)
+      };
+    });
+  }
+
   function setNodeSkin(id, skin) {
     return updateNode(id, { skin });
   }
@@ -524,6 +584,7 @@
     setNodeSkin,
     descendantCount,
     evolvedVariant,
+    replaySteps,
     edgeEndpointId,
     getVaultPath: () => activeVaultPath,
     setVaultPath: path => { activeVaultPath = path; }
