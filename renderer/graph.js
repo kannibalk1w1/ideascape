@@ -125,6 +125,7 @@
       .attr('data-id', node => node.id)
       .call(nodeDrag());
 
+    entered.append('circle').attr('class', 'node-hit');
     entered.append('circle').attr('class', 'node-circle');
     entered.append('image').attr('class', 'node-skin');
     entered.append('text').attr('class', 'node-symbol');
@@ -135,6 +136,8 @@
     all.each(function (node) {
       const group = d3.select(this);
       const url = nodeSkinUrl(node);
+      group.select('.node-hit')
+        .attr('r', node.id === 'root' ? 28 : 23);
       group.select('.node-circle')
         .attr('r', node.id === 'root' ? 22 : 15)
         .attr('fill', node.color)
