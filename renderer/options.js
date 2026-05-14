@@ -9,7 +9,7 @@
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
-    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'orbit-enabled', 'orbit-idle']
+    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle']
       .forEach(id => document.getElementById(id).addEventListener('input', syncFromControls));
 
     render();
@@ -30,6 +30,9 @@
     document.getElementById('star-density').value = settings.background.starDensity;
     document.getElementById('nebula-intensity').value = settings.background.nebulaIntensity;
     document.getElementById('background-opacity').value = settings.background.opacity;
+    document.getElementById('comets-enabled').checked = settings.background.cometsEnabled;
+    document.getElementById('comet-frequency').value = settings.background.cometFrequency;
+    document.getElementById('comet-brightness').value = settings.background.cometBrightness;
     document.getElementById('orbit-enabled').checked = settings.orbit.enabled;
     document.getElementById('orbit-idle').value = settings.orbit.idleSeconds;
     renderSwatches();
@@ -47,7 +50,10 @@
         enabled: document.getElementById('background-enabled').checked,
         starDensity: Number(document.getElementById('star-density').value),
         nebulaIntensity: Number(document.getElementById('nebula-intensity').value),
-        opacity: Number(document.getElementById('background-opacity').value)
+        opacity: Number(document.getElementById('background-opacity').value),
+        cometsEnabled: document.getElementById('comets-enabled').checked,
+        cometFrequency: Number(document.getElementById('comet-frequency').value),
+        cometBrightness: Number(document.getElementById('comet-brightness').value)
       },
       orbit: {
         enabled: document.getElementById('orbit-enabled').checked,

@@ -22,7 +22,10 @@
         imagePath: null,
         opacity: 0.9,
         starDensity: 0.65,
-        nebulaIntensity: 0.55
+        nebulaIntensity: 0.55,
+        cometsEnabled: true,
+        cometFrequency: 0.35,
+        cometBrightness: 0.75
       },
       orbit: {
         enabled: true,

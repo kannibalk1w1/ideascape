@@ -50,6 +50,7 @@
       state.addEdge({ source: parentId, target: node.id, kind });
       focusNode(node.id);
       graph.render();
+      graph.pulseNode(node.id);
       search.update();
       mindmap.renderOutline();
     }

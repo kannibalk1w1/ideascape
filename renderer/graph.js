@@ -6,6 +6,7 @@
   let svgNodes;
   let svgSelection;
   let idle = false;
+  let dragPause = false;
 
   function init() {
     if (state.getNodes().length === 0) state.initRoot(window.innerWidth, window.innerHeight);
@@ -152,6 +153,7 @@
 
     return d3.drag()
       .on('start', (event, node) => {
+        setDragPause(true);
         d3.select(event.sourceEvent.target.closest('.node')).classed('dragging', true);
         target = null;
         const selected = window.interactions?.getSelectedIds() || new Set();
@@ -164,7 +166,7 @@
         } else {
           state.pinNode(node.id, node.x, node.y);
         }
-        simulation.alphaTarget(0.12).restart();
+        simulation.alphaTarget(0).restart();
       })
       .on('drag', (event, node) => {
         if (groupDrag) {
@@ -193,6 +195,7 @@
           offsets.forEach(({ node: item }) => {
             if (!hasLockedEdge(item.id)) state.unpinNode(item.id);
           });
+          setDragPause(false);
           return;
         }
 
@@ -201,6 +204,7 @@
           render();
         }
         if (!hasLockedEdge(node.id)) state.unpinNode(node.id);
+        setDragPause(false);
       });
   }
 
@@ -213,7 +217,7 @@
   function orbitForce() {
     return alpha => {
       const settings = state.getSettings().orbit;
-      if (!idle || !settings.enabled) return;
+      if (!idle || dragPause || !settings.enabled) return;
       const scale = Math.max(0.25, 1 - state.getNodes().length / 180);
       state.eligibleOrbitPairs().forEach(({ parent, child }) => {
         const dx = (child.x ?? 0) - (parent.x ?? 0);
@@ -241,6 +245,13 @@
     simulation.alpha(0.3).restart();
   }
 
+  function setDragPause(paused) {
+    dragPause = paused;
+    simulation.force('charge').strength(paused ? 0 : -300);
+    simulation.force('link').strength(paused ? 0 : 0.3);
+    if (!paused) simulation.alpha(0.22).restart();
+  }
+
   function fitView() {
     const visible = state.visibleNodeIds();
     const nodes = state.getNodes().filter(node => visible.has(node.id));
@@ -259,12 +270,31 @@
     d3.select('#graph').transition().duration(280).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
   }
 
+  function pulseNode(id) {
+    const node = state.getNode(id);
+    if (!node) return;
+    const ring = svgSelection.append('circle')
+      .attr('class', 'creation-pulse')
+      .attr('cx', node.x ?? 0)
+      .attr('cy', node.y ?? 0)
+      .attr('r', 16)
+      .attr('stroke', node.color)
+      .attr('fill', 'none');
+    ring.transition()
+      .duration(650)
+      .attr('r', 46)
+      .style('opacity', 0)
+      .remove();
+  }
+
   window.graph = {
     init,
     render,
     restart,
     fitView,
     setIdle,
+    setDragPause,
+    pulseNode,
     getZoom: () => zoom,
     getZoomTransform: () => zoomTransform,
     getSVG: () => d3.select('#graph'),

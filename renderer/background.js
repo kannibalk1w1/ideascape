@@ -2,13 +2,16 @@
   let canvas;
   let ctx;
   let stars = [];
+  let comets = [];
   let customImage = null;
+  let lastTime = 0;
 
   function init() {
     canvas = document.getElementById('background-canvas');
     ctx = canvas.getContext('2d');
     window.addEventListener('resize', resize);
     resize();
+    requestAnimationFrame(animate);
   }
 
   function resize() {
@@ -72,6 +75,66 @@
       ctx.beginPath();
       ctx.arc(star.x * canvas.width, star.y * canvas.height, star.r * devicePixelRatio, 0, Math.PI * 2);
       ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function animate(time) {
+    const dt = Math.min(50, time - lastTime || 16);
+    lastTime = time;
+    maybeSpawnComet(dt);
+    updateComets(dt);
+    render();
+    drawComets();
+    requestAnimationFrame(animate);
+  }
+
+  function maybeSpawnComet(dt) {
+    const settings = state.getSettings().background;
+    if (!settings.enabled || !settings.cometsEnabled) return;
+    const chance = (settings.cometFrequency || 0) * dt / 9000;
+    if (Math.random() > chance || comets.length > 3) return;
+    const fromLeft = Math.random() > 0.5;
+    const y = Math.random() * canvas.height * 0.45;
+    comets.push({
+      x: fromLeft ? -80 : canvas.width + 80,
+      y,
+      vx: (fromLeft ? 1 : -1) * (0.55 + Math.random() * 0.45) * devicePixelRatio,
+      vy: (0.18 + Math.random() * 0.28) * devicePixelRatio,
+      life: 0,
+      maxLife: 1800 + Math.random() * 900,
+      length: 140 + Math.random() * 180
+    });
+  }
+
+  function updateComets(dt) {
+    comets.forEach(comet => {
+      comet.life += dt;
+      comet.x += comet.vx * dt;
+      comet.y += comet.vy * dt;
+    });
+    comets = comets.filter(comet => comet.life < comet.maxLife && comet.x > -400 && comet.x < canvas.width + 400 && comet.y < canvas.height + 400);
+  }
+
+  function drawComets() {
+    const settings = state.getSettings().background;
+    if (!settings.enabled || !settings.cometsEnabled) return;
+    ctx.save();
+    comets.forEach(comet => {
+      const fade = Math.sin(Math.PI * comet.life / comet.maxLife);
+      const mag = Math.hypot(comet.vx, comet.vy) || 1;
+      const tx = -comet.vx / mag * comet.length;
+      const ty = -comet.vy / mag * comet.length;
+      const gradient = ctx.createLinearGradient(comet.x, comet.y, comet.x + tx, comet.y + ty);
+      gradient.addColorStop(0, `rgba(255,255,255,${0.85 * settings.cometBrightness * fade})`);
+      gradient.addColorStop(0.2, `rgba(163,230,255,${0.35 * settings.cometBrightness * fade})`);
+      gradient.addColorStop(1, 'rgba(163,230,255,0)');
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 2.2 * devicePixelRatio;
+      ctx.beginPath();
+      ctx.moveTo(comet.x, comet.y);
+      ctx.lineTo(comet.x + tx, comet.y + ty);
+      ctx.stroke();
     });
     ctx.restore();
   }
