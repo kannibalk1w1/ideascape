@@ -1,6 +1,7 @@
 node_modules/
 *.log
 dist/
+release/
 coverage/
 .ideascape-temp/
 ideascape.png

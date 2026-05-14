@@ -2,11 +2,36 @@
   "name": "ideascape",
   "version": "0.1.0",
   "description": "A physics-driven idea graph with Markdown notes and Obsidian-compatible vault storage.",
+  "author": "IdeaScape",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist:win": "electron-builder --win portable",
     "test": "jest",
     "test:watch": "jest --watch"
+  },
+  "build": {
+    "appId": "com.ideascape.app",
+    "productName": "IdeaScape",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "src/main/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "IdeaScape-${version}-portable.${ext}"
+    }
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -21,6 +46,7 @@
   },
   "devDependencies": {
     "electron": "^30.5.1",
+    "electron-builder": "^26.8.1",
     "jest": "^29.7.0"
   },
   "jest": {
