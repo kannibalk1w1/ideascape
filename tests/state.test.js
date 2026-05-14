@@ -110,3 +110,35 @@ test('eligibleOrbitPairs returns floating children of locked parents only', () =
   state.addEdge({ source: parent.id, target: child.id });
   expect(state.eligibleOrbitPairs().map(pair => pair.child.id)).toEqual([child.id]);
 });
+
+test('hierarchy branch helpers track children, parent, and branch ids', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const grandchild = state.addNode({ label: 'Grandchild', x: 0, y: 0 });
+  state.addEdge({ source: 'root', target: child.id, kind: 'hierarchy' });
+  state.addEdge({ source: child.id, target: grandchild.id, kind: 'hierarchy' });
+
+  expect(state.hierarchyChildren('root').map(node => node.id)).toEqual([child.id]);
+  expect(state.hierarchyParent(grandchild.id).id).toBe(child.id);
+  expect(state.branchIds(child.id, true).sort()).toEqual([child.id, grandchild.id].sort());
+});
+
+test('collapsed branches hide descendants from visible node ids', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const grandchild = state.addNode({ label: 'Grandchild', x: 0, y: 0 });
+  state.addEdge({ source: 'root', target: child.id, kind: 'hierarchy' });
+  state.addEdge({ source: child.id, target: grandchild.id, kind: 'hierarchy' });
+  state.toggleCollapsed(child.id);
+
+  expect(state.visibleNodeIds().has(child.id)).toBe(true);
+  expect(state.visibleNodeIds().has(grandchild.id)).toBe(false);
+});
+
+test('undo restores edge kind and collapsed state', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const edge = state.addEdge({ source: 'root', target: child.id, kind: 'hierarchy' });
+  state.toggleCollapsed('root');
+  expect(state.getNode('root').collapsed).toBe(true);
+  state.undo();
+  expect(state.getNode('root').collapsed).toBe(false);
+  expect(state.getEdges().find(item => item.id === edge.id).kind).toBe('hierarchy');
+});

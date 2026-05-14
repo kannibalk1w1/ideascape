@@ -51,7 +51,8 @@
         id: edge.id,
         source: edgeEndpointId(edge.source),
         target: edgeEndpointId(edge.target),
-        locked: edge.locked
+        locked: edge.locked,
+        kind: edge.kind || 'association'
       }))
     };
   }
@@ -97,7 +98,8 @@
       iconPath: null,
       pinnedLabel: true,
       notePath: 'notes/root.md',
-      markdown: '# My Ideascape\n\n'
+      markdown: '# My Ideascape\n\n',
+      collapsed: false
     }];
     edges = [];
     undoStack = [];
@@ -106,8 +108,8 @@
   }
 
   function loadGraph(graph) {
-    nodes = graph.nodes.map(node => ({ ...node }));
-    edges = graph.edges.map(edge => ({ ...edge }));
+    nodes = graph.nodes.map(node => ({ collapsed: false, ...node }));
+    edges = graph.edges.map(edge => ({ kind: 'association', ...edge }));
     settings = { ...defaultSettings(), ...(graph.settings || {}) };
     settings.palette = { ...defaultSettings().palette, ...(graph.settings?.palette || {}) };
     settings.background = { ...defaultSettings().background, ...(graph.settings?.background || {}) };
@@ -130,7 +132,8 @@
       iconPath: null,
       pinnedLabel: false,
       notePath: null,
-      markdown: markdown || `# ${label || 'Untitled'}\n\n`
+      markdown: markdown || `# ${label || 'Untitled'}\n\n`,
+      collapsed: false
     };
     nodes.push(node);
     return node;
@@ -160,7 +163,7 @@
     return node;
   }
 
-  function addEdge({ source, target, locked = false }) {
+  function addEdge({ source, target, locked = false, kind = 'association' }) {
     const sourceId = edgeEndpointId(source);
     const targetId = edgeEndpointId(target);
     if (!sourceId || !targetId || sourceId === targetId) return null;
@@ -171,7 +174,7 @@
     });
     if (exists) return null;
     snapshot();
-    const edge = { id: uuid(), source: sourceId, target: targetId, locked };
+    const edge = { id: uuid(), source: sourceId, target: targetId, locked, kind };
     edges.push(edge);
     syncPins();
     return edge;
@@ -210,8 +213,9 @@
   function undo() {
     if (undoStack.length === 0) return false;
     const previous = JSON.parse(undoStack.pop());
-    nodes = previous.nodes;
-    edges = previous.edges;
+    nodes = previous.nodes.map(node => ({ collapsed: false, ...node }));
+    edges = previous.edges.map(edge => ({ kind: 'association', ...edge }));
+    settings = previous.settings || settings;
     return true;
   }
 
@@ -224,6 +228,65 @@
       .filter(edge => edgeEndpointId(edge.source) === id || edgeEndpointId(edge.target) === id)
       .map(edge => getNode(edgeEndpointId(edge.source) === id ? edgeEndpointId(edge.target) : edgeEndpointId(edge.source)))
       .filter(Boolean);
+  }
+
+  function hierarchyChildren(id) {
+    return edges
+      .filter(edge => (edge.kind || 'association') === 'hierarchy' && edgeEndpointId(edge.source) === id)
+      .map(edge => getNode(edgeEndpointId(edge.target)))
+      .filter(Boolean);
+  }
+
+  function hierarchyParent(id) {
+    const edge = edges.find(item => (item.kind || 'association') === 'hierarchy' && edgeEndpointId(item.target) === id);
+    return edge ? getNode(edgeEndpointId(edge.source)) : null;
+  }
+
+  function branchIds(rootId, includeRoot = true) {
+    const ids = new Set(includeRoot ? [rootId] : []);
+    const visit = id => {
+      hierarchyChildren(id).forEach(child => {
+        if (ids.has(child.id)) return;
+        ids.add(child.id);
+        visit(child.id);
+      });
+    };
+    visit(rootId);
+    return [...ids];
+  }
+
+  function visibleNodeIds() {
+    const hidden = new Set();
+    const visitHidden = id => {
+      hierarchyChildren(id).forEach(child => {
+        hidden.add(child.id);
+        visitHidden(child.id);
+      });
+    };
+    nodes.forEach(node => {
+      if (node.collapsed) visitHidden(node.id);
+    });
+    return new Set(nodes.filter(node => !hidden.has(node.id)).map(node => node.id));
+  }
+
+  function toggleCollapsed(id) {
+    snapshot();
+    const node = getNode(id);
+    if (!node) return null;
+    node.collapsed = !node.collapsed;
+    return node.collapsed;
+  }
+
+  function setEdgeKind(id, kind) {
+    snapshot();
+    const edge = edges.find(item => item.id === id);
+    if (!edge) return null;
+    edge.kind = kind;
+    return edge;
+  }
+
+  function removeBranch(id) {
+    branchIds(id, true).reverse().forEach(nodeId => removeNode(nodeId));
   }
 
   function updateSettings(patch) {
@@ -286,6 +349,13 @@
     undo,
     getNode,
     connectedNodes,
+    hierarchyChildren,
+    hierarchyParent,
+    branchIds,
+    visibleNodeIds,
+    toggleCollapsed,
+    setEdgeKind,
+    removeBranch,
     eligibleOrbitPairs,
     getSettings: () => settings,
     updateSettings,

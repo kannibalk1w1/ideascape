@@ -138,6 +138,46 @@ button:hover {
   display: block;
 }
 
+#outline-panel {
+  position: fixed;
+  top: 66px;
+  right: 16px;
+  z-index: 34;
+  display: none;
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100vh - 150px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(24, 27, 31, 0.94);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
+}
+
+#outline-panel.active {
+  display: block;
+}
+
+.outline-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 4px 9px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.outline-row:hover {
+  background: #252b31;
+}
+
+.outline-toggle {
+  width: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
 .search-result {
   position: relative;
   padding: 10px 12px;
@@ -180,6 +220,15 @@ button:hover {
 
 .edge.locked {
   opacity: 1;
+}
+
+.edge.hierarchy {
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 5px rgba(163, 230, 53, 0.25));
+}
+
+.edge.association {
+  stroke-linecap: round;
 }
 
 .edge.hit-area {

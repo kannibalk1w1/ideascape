@@ -4,6 +4,7 @@
     graph.init();
     editor.init();
     search.init();
+    mindmap.init();
     options.init();
     exporter.init();
     interactions.init();

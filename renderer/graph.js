@@ -64,17 +64,19 @@
   }
 
   function renderEdges() {
-    const visual = svgEdges.selectAll('.edge.visual').data(state.getEdges(), edge => edge.id);
+    const visible = state.visibleNodeIds();
+    const edges = state.getEdges().filter(edge => visible.has(state.edgeEndpointId(edge.source)) && visible.has(state.edgeEndpointId(edge.target)));
+    const visual = svgEdges.selectAll('.edge.visual').data(edges, edge => edge.id);
     visual.enter()
       .append('line')
       .attr('class', 'edge visual')
       .merge(visual)
-      .attr('class', edge => `edge visual ${edge.locked ? 'locked' : 'floating'}`)
+      .attr('class', edge => `edge visual ${edge.locked ? 'locked' : 'floating'} ${edge.kind || 'association'}`)
       .attr('stroke', edge => edgeColour(edge))
-      .attr('stroke-width', edge => edge.locked ? 2.6 : 1.7);
+      .attr('stroke-width', edge => (edge.kind === 'hierarchy' ? 2.4 : 1.7) + (edge.locked ? 0.8 : 0));
     visual.exit().remove();
 
-    const hit = svgEdges.selectAll('.edge.hit-area').data(state.getEdges(), edge => edge.id);
+    const hit = svgEdges.selectAll('.edge.hit-area').data(edges, edge => edge.id);
     hit.enter()
       .append('line')
       .attr('class', 'edge hit-area')
@@ -85,7 +87,8 @@
   }
 
   function renderNodes() {
-    const groups = svgNodes.selectAll('.node').data(state.getNodes(), node => node.id);
+    const visible = state.visibleNodeIds();
+    const groups = svgNodes.selectAll('.node').data(state.getNodes().filter(node => visible.has(node.id)), node => node.id);
     const entered = groups.enter()
       .append('g')
       .attr('class', 'node')
@@ -108,6 +111,8 @@
       .attr('dy', node => (node.id === 'root' ? 24 : 18) + 13)
       .attr('fill', node => node.color)
       .text(node => node.label);
+    all.select('.node-label')
+      .text(node => `${node.collapsed ? '+ ' : ''}${node.label}`);
 
     groups.exit().remove();
     updateLabelVisibility();
@@ -219,13 +224,15 @@
   }
 
   function restart() {
-    simulation.nodes(state.getNodes());
-    simulation.force('link').links(state.getEdges());
+    const visible = state.visibleNodeIds();
+    simulation.nodes(state.getNodes().filter(node => visible.has(node.id)));
+    simulation.force('link').links(state.getEdges().filter(edge => visible.has(state.edgeEndpointId(edge.source)) && visible.has(state.edgeEndpointId(edge.target))));
     simulation.alpha(0.3).restart();
   }
 
   function fitView() {
-    const nodes = state.getNodes();
+    const visible = state.visibleNodeIds();
+    const nodes = state.getNodes().filter(node => visible.has(node.id));
     if (nodes.length === 0) return;
     const xs = nodes.map(node => node.x ?? 0);
     const ys = nodes.map(node => node.y ?? 0);
@@ -250,6 +257,30 @@
     getZoom: () => zoom,
     getZoomTransform: () => zoomTransform,
     getSVG: () => d3.select('#graph'),
-    screenToCanvas: (x, y) => [(x - zoomTransform.x) / zoomTransform.k, (y - zoomTransform.y) / zoomTransform.k]
+    screenToCanvas: (x, y) => [(x - zoomTransform.x) / zoomTransform.k, (y - zoomTransform.y) / zoomTransform.k],
+    arrangeBranch
   };
+
+  function arrangeBranch(rootId, radial = false) {
+    const root = state.getNode(rootId);
+    if (!root) return;
+    const children = state.hierarchyChildren(rootId);
+    const allBranch = state.branchIds(rootId, false).map(id => state.getNode(id)).filter(Boolean);
+    if (radial) {
+      const nodes = rootId === 'root' ? allBranch : children;
+      const radius = Math.max(120, nodes.length * 24);
+      nodes.forEach((node, index) => {
+        const angle = (Math.PI * 2 * index) / Math.max(1, nodes.length);
+        node.x = root.x + Math.cos(angle) * radius;
+        node.y = root.y + Math.sin(angle) * radius;
+      });
+    } else {
+      const startY = root.y - ((children.length - 1) * 72) / 2;
+      children.forEach((child, index) => {
+        child.x = root.x + 180;
+        child.y = startY + index * 72;
+      });
+    }
+    render();
+  }
 }());

@@ -28,7 +28,7 @@
     graph.render();
   }
 
-  function showInlineInput(screenX, screenY, canvasX, canvasY, parentId = 'root') {
+  function showInlineInput(screenX, screenY, canvasX, canvasY, parentId = 'root', kind = 'hierarchy') {
     document.getElementById('node-inline-input')?.remove();
     const wrapper = document.createElement('div');
     wrapper.id = 'node-inline-input';
@@ -47,10 +47,11 @@
       wrapper.remove();
       if (!label) return;
       const node = state.addNode({ label, x: canvasX, y: canvasY });
-      state.addEdge({ source: parentId, target: node.id });
+      state.addEdge({ source: parentId, target: node.id, kind });
       focusNode(node.id);
       graph.render();
       search.update();
+      mindmap.renderOutline();
     }
 
     input.addEventListener('keydown', event => {
@@ -85,11 +86,18 @@
       target: node,
       items: [
         { label: 'Add connected node', action: 'add-child' },
+        { label: 'Add sibling node', action: 'add-sibling' },
         { label: 'Open note', action: 'open-note' },
         { label: 'Edit label', action: 'edit-label' },
         { label: 'Change colour', action: 'change-colour' },
         { label: node.pinnedLabel ? 'Allow label hiding' : 'Always show label', action: 'toggle-label-pin' },
         'sep',
+        { label: node.collapsed ? 'Expand branch' : 'Collapse branch', action: 'toggle-collapse' },
+        { label: 'Select branch', action: 'select-branch' },
+        { label: 'Arrange branch', action: 'arrange-branch' },
+        { label: 'Arrange as radial map', action: 'arrange-radial' },
+        'sep',
+        { label: 'Delete branch', action: 'delete-branch', danger: true },
         { label: 'Delete', action: 'delete-node', danger: true }
       ]
     });
@@ -102,6 +110,7 @@
       target: edge,
       items: [
         { label: edge.locked ? 'Unlock connection' : 'Lock connection', action: edge.locked ? 'unlock-edge' : 'lock-edge' },
+        { label: edge.kind === 'hierarchy' ? 'Make association link' : 'Make hierarchy link', action: edge.kind === 'hierarchy' ? 'make-association' : 'make-hierarchy' },
         'sep',
         { label: 'Delete connection', action: 'delete-edge', danger: true }
       ]
@@ -276,7 +285,11 @@
     document.addEventListener('menu-action', event => {
       const { action, target } = event.detail;
       if (action === 'add-child') {
-        showInlineInput(window.innerWidth / 2, window.innerHeight / 2, (target.x ?? 0) + 90, (target.y ?? 0) + 70, target.id);
+        showInlineInput(window.innerWidth / 2, window.innerHeight / 2, (target.x ?? 0) + 150, (target.y ?? 0) + 70, target.id, 'hierarchy');
+      }
+      if (action === 'add-sibling') {
+        const parent = state.hierarchyParent(target.id) || state.getNode('root');
+        showInlineInput(window.innerWidth / 2, window.innerHeight / 2, (target.x ?? 0), (target.y ?? 0) + 90, parent.id, 'hierarchy');
       }
       if (action === 'open-note') editor.open(target);
       if (action === 'edit-label') {
@@ -285,6 +298,7 @@
           state.updateNode(target.id, { label: label.trim() });
           graph.render();
           search.update();
+          mindmap.renderOutline();
         }
       }
       if (action === 'change-colour') {
@@ -298,11 +312,33 @@
         state.updateNode(target.id, { pinnedLabel: !target.pinnedLabel });
         graph.render();
       }
+      if (action === 'toggle-collapse') {
+        state.toggleCollapsed(target.id);
+        graph.render();
+        mindmap.renderOutline();
+      }
+      if (action === 'select-branch') {
+        setSelected(state.branchIds(target.id, true));
+      }
+      if (action === 'arrange-branch') {
+        graph.arrangeBranch(target.id, false);
+      }
+      if (action === 'arrange-radial') {
+        graph.arrangeBranch(target.id, true);
+      }
+      if (action === 'delete-branch') {
+        state.removeBranch(target.id);
+        clearSelection();
+        graph.render();
+        search.update();
+        mindmap.renderOutline();
+      }
       if (action === 'delete-node') {
         state.removeNode(target.id);
         clearSelection();
         graph.render();
         search.update();
+        mindmap.renderOutline();
       }
       if (action === 'lock-edge') {
         state.setEdgeLocked(target.id, true);
@@ -315,12 +351,19 @@
       if (action === 'delete-edge') {
         state.removeEdge(target.id);
         graph.render();
+        mindmap.renderOutline();
+      }
+      if (action === 'make-hierarchy' || action === 'make-association') {
+        state.setEdgeKind(target.id, action === 'make-hierarchy' ? 'hierarchy' : 'association');
+        graph.render();
+        mindmap.renderOutline();
       }
       if (action === 'delete-selected') {
         target.ids.forEach(id => state.removeNode(id));
         clearSelection();
         graph.render();
         search.update();
+        mindmap.renderOutline();
       }
       if (action === 'lock-selected-edges' || action === 'unlock-selected-edges') {
         const lock = action === 'lock-selected-edges';
