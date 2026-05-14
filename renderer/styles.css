@@ -486,6 +486,23 @@ button:hover {
   transform: translateY(0);
 }
 
+body.screensaver-mode {
+  cursor: none;
+}
+
+body.screensaver-mode #zoom-controls,
+body.screensaver-mode #vault-controls,
+body.screensaver-mode #search-panel,
+body.screensaver-mode #outline-panel,
+body.screensaver-mode #options-panel,
+body.screensaver-mode #editor-panel,
+body.screensaver-mode #context-menu,
+body.screensaver-mode #toast {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
 #options-panel {
   position: fixed;
   left: 16px;

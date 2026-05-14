@@ -121,6 +121,15 @@ test('setPalette changes future node colours and can recolour existing nodes', (
   expect(state.getNode(existing.id).color).toBe('#333333');
 });
 
+test('settings include screensaver defaults and merge loaded settings', () => {
+  expect(state.getSettings().screensaver).toMatchObject({ enabled: true, idleSeconds: 45 });
+  const graph = state.cloneGraph();
+  graph.settings = { screensaver: { idleSeconds: 30 }, orbit: { idleSeconds: 8 } };
+  state.loadGraph(graph);
+  expect(state.getSettings().screensaver).toMatchObject({ enabled: true, idleSeconds: 30 });
+  expect(state.getSettings().orbit).toMatchObject({ enabled: true, idleSeconds: 8 });
+});
+
 test('eligibleOrbitPairs returns floating children of locked parents only', () => {
   const parent = state.addNode({ label: 'Parent', x: 100, y: 100 });
   const child = state.addNode({ label: 'Child', x: 160, y: 100 });

@@ -31,6 +31,10 @@
         enabled: true,
         idleSeconds: 12,
         strength: 0.018
+      },
+      screensaver: {
+        enabled: true,
+        idleSeconds: 45
       }
     };
   }
@@ -119,6 +123,7 @@
     settings.palette = { ...defaultSettings().palette, ...(graph.settings?.palette || {}) };
     settings.background = { ...defaultSettings().background, ...(graph.settings?.background || {}) };
     settings.orbit = { ...defaultSettings().orbit, ...(graph.settings?.orbit || {}) };
+    settings.screensaver = { ...defaultSettings().screensaver, ...(graph.settings?.screensaver || {}) };
     undoStack = [];
     syncPins();
   }
@@ -328,7 +333,8 @@
       ...patch,
       palette: { ...settings.palette, ...(patch.palette || {}) },
       background: { ...settings.background, ...(patch.background || {}) },
-      orbit: { ...settings.orbit, ...(patch.orbit || {}) }
+      orbit: { ...settings.orbit, ...(patch.orbit || {}) },
+      screensaver: { ...settings.screensaver, ...(patch.screensaver || {}) }
     };
     return settings;
   }

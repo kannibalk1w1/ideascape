@@ -9,7 +9,7 @@
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
-    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle']
+    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle']
       .forEach(id => document.getElementById(id).addEventListener('input', syncFromControls));
 
     render();
@@ -35,6 +35,8 @@
     document.getElementById('comet-brightness').value = settings.background.cometBrightness;
     document.getElementById('orbit-enabled').checked = settings.orbit.enabled;
     document.getElementById('orbit-idle').value = settings.orbit.idleSeconds;
+    document.getElementById('screensaver-enabled').checked = settings.screensaver.enabled;
+    document.getElementById('screensaver-idle').value = settings.screensaver.idleSeconds;
     renderSwatches();
   }
 
@@ -58,10 +60,14 @@
       orbit: {
         enabled: document.getElementById('orbit-enabled').checked,
         idleSeconds: Number(document.getElementById('orbit-idle').value)
+      },
+      screensaver: {
+        enabled: document.getElementById('screensaver-enabled').checked,
+        idleSeconds: Number(document.getElementById('screensaver-idle').value)
       }
     });
     background.refresh();
-    interactions.resetIdleTimer();
+    interactions.resetActivityTimers();
   }
 
   function importPalette() {

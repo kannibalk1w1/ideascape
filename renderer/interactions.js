@@ -2,6 +2,7 @@
   let selectedIds = new Set();
   let focusedId = null;
   let idleTimer = null;
+  let screensaverTimer = null;
 
   function toast(message) {
     const el = document.getElementById('toast');
@@ -130,9 +131,9 @@
   }
 
   function init() {
-    resetIdleTimer();
+    resetActivityTimers();
     ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(eventName => {
-      window.addEventListener(eventName, resetIdleTimer, { passive: true });
+      window.addEventListener(eventName, resetActivityTimers, { passive: true });
     });
     document.getElementById('zoom-in').addEventListener('click', () =>
       graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1.25));
@@ -232,6 +233,34 @@
       if (document.getElementById('search-results')?.classList.contains('active')) return;
       graph.setIdle(true);
     }, Math.max(3, seconds) * 1000);
+  }
+
+  function resetActivityTimers() {
+    exitScreensaver();
+    resetIdleTimer();
+    resetScreensaverTimer();
+  }
+
+  function resetScreensaverTimer() {
+    clearTimeout(screensaverTimer);
+    const settings = state.getSettings().screensaver;
+    if (!settings.enabled) return;
+    screensaverTimer = setTimeout(() => {
+      const editorOpen = document.getElementById('editor-panel')?.classList.contains('hidden') === false;
+      const optionsOpen = document.getElementById('options-panel')?.classList.contains('hidden') === false;
+      const menuOpen = document.getElementById('context-menu')?.style.display === 'block';
+      if (editorOpen || optionsOpen || menuOpen) {
+        resetScreensaverTimer();
+        return;
+      }
+      document.body.classList.add('screensaver-mode');
+      graph.setIdle(true);
+    }, Math.max(30, Math.min(60, settings.idleSeconds)) * 1000);
+  }
+
+  function exitScreensaver() {
+    if (!document.body.classList.contains('screensaver-mode')) return;
+    document.body.classList.remove('screensaver-mode');
   }
 
   function wireSelectionBox() {
@@ -417,6 +446,7 @@
     clearSelection,
     getSelectedIds: () => selectedIds,
     getFocusedId: () => focusedId,
-    resetIdleTimer
+    resetIdleTimer,
+    resetActivityTimers
   };
 }());
