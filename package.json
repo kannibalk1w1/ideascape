@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist:win": "electron-builder --win portable",
+    "dist:win": "electron-builder --win zip",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -17,6 +17,7 @@
     "directories": {
       "output": "release"
     },
+    "artifactName": "IdeaScape-${version}-win.${ext}",
     "files": [
       "main.js",
       "preload.js",
@@ -26,11 +27,8 @@
     ],
     "win": {
       "target": [
-        "portable"
+        "zip"
       ]
-    },
-    "portable": {
-      "artifactName": "IdeaScape-${version}-portable.${ext}"
     }
   },
   "dependencies": {

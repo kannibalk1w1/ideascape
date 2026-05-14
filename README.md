@@ -59,7 +59,7 @@ Run it from:
 release/win-unpacked/IdeaScape.exe
 ```
 
-Create a portable Windows executable:
+Create a shareable Windows ZIP:
 
 ```powershell
 npm run dist:win
@@ -68,10 +68,10 @@ npm run dist:win
 Share this file with testers:
 
 ```text
-release/IdeaScape-0.1.0-portable.exe
+release/IdeaScape-0.1.0-win.zip
 ```
 
-The build is currently unsigned, so Windows SmartScreen may show a warning.
+Testers can unzip it and run `IdeaScape.exe`. The build is currently unsigned, so Windows SmartScreen may show a warning.
 
 ## Tester Flow
 

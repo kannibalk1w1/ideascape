@@ -360,6 +360,16 @@ select {
   stroke-width: 3;
 }
 
+.node.selected .node-hit {
+  stroke: #fff;
+  stroke-width: 2.5;
+}
+
+.node.focused .node-hit {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
 .node-symbol {
   pointer-events: none;
   text-anchor: middle;

@@ -139,9 +139,11 @@ function importSkinAsset(payload) {
 }
 
 function writeExport(payload, type) {
-  const defaultName = type === 'gif' ? 'ideascape.gif' : 'ideascape.png';
-  const exportDir = payload.vaultPath || process.cwd();
-  const filePath = path.join(exportDir, defaultName);
+  const extension = type === 'gif' ? 'gif' : 'png';
+  const exportDir = path.join(payload.vaultPath || process.cwd(), 'exports');
+  ensureDir(exportDir);
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filePath = path.join(exportDir, `ideascape-${stamp}.${extension}`);
   const data = payload.dataUrl.replace(/^data:[^;]+;base64,/, '');
   fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
   return filePath;

@@ -1,6 +1,6 @@
 # IdeaScape Tester Checklist
 
-Use `release/IdeaScape-0.1.0-portable.exe` for early Windows testing.
+Use `release/IdeaScape-0.1.0-win.zip` for early Windows testing. Unzip it and run `IdeaScape.exe`.
 
 ## First Run
 
@@ -21,6 +21,7 @@ Use `release/IdeaScape-0.1.0-portable.exe` for early Windows testing.
 ## Export Flow
 
 - Click `PNG` and confirm an image appears in the vault exports.
+- Exports are written to the vault's `exports` folder.
 - Click `Replay`, use `Play`, `Prev`, `Next`, and the speed selector.
 - Click `Replay GIF` and confirm a GIF appears in the vault exports.
 

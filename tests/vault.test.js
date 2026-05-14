@@ -22,3 +22,14 @@ test('importSkinAsset copies sprites into editable vault skin folder', () => {
   expect(rel).toMatch(/^\.ideascape\/skins\/user\/.*moon\.png$/);
   expect(fs.existsSync(path.join(dir, rel))).toBe(true);
 });
+
+test('writeExport creates an exports folder with timestamped files', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-export-'));
+  const filePath = vault.writeExport({
+    vaultPath: dir,
+    dataUrl: `data:image/png;base64,${Buffer.from('png').toString('base64')}`
+  }, 'png');
+  expect(filePath).toMatch(/exports[\\/]+ideascape-.*\.png$/);
+  expect(fs.existsSync(filePath)).toBe(true);
+  expect(fs.readFileSync(filePath, 'utf8')).toBe('png');
+});
