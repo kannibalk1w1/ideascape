@@ -60,6 +60,17 @@ ipcMain.handle('vault:chooseAsset', async () => {
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
 });
+ipcMain.handle('vault:chooseBackground', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose a background image',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'] }
+    ]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
 ipcMain.handle('vault:importAsset', async (_event, payload) => vault.importAsset(payload));
 ipcMain.handle('export:png', async (_event, payload) => vault.writeExport(payload, 'png'));
 ipcMain.handle('export:gif', async (_event, payload) => vault.writeExport(payload, 'gif'));

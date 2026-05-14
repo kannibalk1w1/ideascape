@@ -9,6 +9,7 @@
 <body>
   <main id="app">
     <section id="canvas-shell" aria-label="Idea graph canvas">
+      <canvas id="background-canvas" aria-hidden="true"></canvas>
       <div id="zoom-controls" class="toolbar cluster">
         <button id="zoom-in" title="Zoom in">+</button>
         <button id="zoom-out" title="Zoom out">-</button>
@@ -21,7 +22,44 @@
         <button id="save-vault">Save</button>
         <button id="export-png">PNG</button>
         <button id="export-gif">GIF</button>
+        <button id="toggle-options">Options</button>
       </div>
+
+      <aside id="options-panel" class="hidden">
+        <header>
+          <h2>Options</h2>
+          <button id="close-options">Close</button>
+        </header>
+
+        <section>
+          <h3>Palette</h3>
+          <textarea id="palette-input" placeholder="Paste a Lospec URL, .hex/.gpl text, or hex colours"></textarea>
+          <label class="check-row">
+            <input id="apply-palette-existing" type="checkbox">
+            Apply to existing nodes
+          </label>
+          <button id="import-palette">Import palette</button>
+          <div id="palette-swatches"></div>
+        </section>
+
+        <section>
+          <h3>Universe</h3>
+          <label class="check-row"><input id="background-enabled" type="checkbox"> Background enabled</label>
+          <label>Star density <input id="star-density" type="range" min="0" max="1" step="0.05"></label>
+          <label>Nebula intensity <input id="nebula-intensity" type="range" min="0" max="1" step="0.05"></label>
+          <label>Background opacity <input id="background-opacity" type="range" min="0" max="1" step="0.05"></label>
+          <div class="button-row">
+            <button id="choose-background">Import background</button>
+            <button id="reset-background">Reset</button>
+          </div>
+        </section>
+
+        <section>
+          <h3>Idle Orbit</h3>
+          <label class="check-row"><input id="orbit-enabled" type="checkbox"> Orbit after idle</label>
+          <label>Idle seconds <input id="orbit-idle" type="number" min="3" max="120" step="1"></label>
+        </section>
+      </aside>
 
       <div id="search-panel">
         <input id="search-input" type="search" placeholder="Search nodes" autocomplete="off">
@@ -68,11 +106,14 @@
 
   <script src="../node_modules/d3/dist/d3.min.js"></script>
   <script src="./state.js"></script>
+  <script src="./palette.js"></script>
+  <script src="./background.js"></script>
   <script src="./vault-client.js"></script>
   <script src="./graph.js"></script>
   <script src="./menu.js"></script>
   <script src="./editor.js"></script>
   <script src="./search.js"></script>
+  <script src="./options.js"></script>
   <script src="./exporter.js"></script>
   <script src="./interactions.js"></script>
   <script src="./app.js"></script>

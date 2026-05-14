@@ -90,3 +90,23 @@ test('connectedNodes returns direct neighbours', () => {
   state.addEdge({ source: a.id, target: b.id });
   expect(state.connectedNodes(a.id).map(node => node.id).sort()).toEqual(['root', b.id].sort());
 });
+
+test('setPalette changes future node colours and can recolour existing nodes', () => {
+  const existing = state.addNode({ label: 'Existing', x: 0, y: 0 });
+  state.setPalette('Test', ['#111111', '#222222'], false);
+  const next = state.addNode({ label: 'Next', x: 0, y: 0 });
+  expect(existing.color).not.toBe('#111111');
+  expect(next.color).toBe('#111111');
+
+  state.setPalette('Apply', ['#333333'], true);
+  expect(state.getNode(existing.id).color).toBe('#333333');
+});
+
+test('eligibleOrbitPairs returns floating children of locked parents only', () => {
+  const parent = state.addNode({ label: 'Parent', x: 100, y: 100 });
+  const child = state.addNode({ label: 'Child', x: 160, y: 100 });
+  const locked = state.addEdge({ source: 'root', target: parent.id });
+  state.setEdgeLocked(locked.id, true);
+  state.addEdge({ source: parent.id, target: child.id });
+  expect(state.eligibleOrbitPairs().map(pair => pair.child.id)).toEqual([child.id]);
+});

@@ -7,6 +7,30 @@
   let undoStack = [];
   let paletteIndex = 0;
   let activeVaultPath = null;
+  let settings = defaultSettings();
+
+  function defaultSettings() {
+    return {
+      palette: {
+        name: 'IdeaScape Default',
+        colors: [...PALETTE],
+        applyToExisting: false
+      },
+      background: {
+        enabled: true,
+        mode: 'universe',
+        imagePath: null,
+        opacity: 0.9,
+        starDensity: 0.65,
+        nebulaIntensity: 0.55
+      },
+      orbit: {
+        enabled: true,
+        idleSeconds: 12,
+        strength: 0.018
+      }
+    };
+  }
 
   function uuid() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -21,6 +45,7 @@
     return {
       version: 1,
       savedAt: new Date().toISOString(),
+      settings: JSON.parse(JSON.stringify(settings)),
       nodes: nodes.map(node => ({ ...node })),
       edges: edges.map(edge => ({
         id: edge.id,
@@ -77,11 +102,16 @@
     edges = [];
     undoStack = [];
     paletteIndex = 0;
+    settings = defaultSettings();
   }
 
   function loadGraph(graph) {
     nodes = graph.nodes.map(node => ({ ...node }));
     edges = graph.edges.map(edge => ({ ...edge }));
+    settings = { ...defaultSettings(), ...(graph.settings || {}) };
+    settings.palette = { ...defaultSettings().palette, ...(graph.settings?.palette || {}) };
+    settings.background = { ...defaultSettings().background, ...(graph.settings?.background || {}) };
+    settings.orbit = { ...defaultSettings().orbit, ...(graph.settings?.orbit || {}) };
     undoStack = [];
     syncPins();
   }
@@ -95,7 +125,7 @@
       y: y ?? 0,
       fx: null,
       fy: null,
-      color: color || PALETTE[paletteIndex++ % PALETTE.length],
+      color: color || settings.palette.colors[paletteIndex++ % settings.palette.colors.length] || PALETTE[0],
       symbol: null,
       iconPath: null,
       pinnedLabel: false,
@@ -196,6 +226,48 @@
       .filter(Boolean);
   }
 
+  function updateSettings(patch) {
+    settings = {
+      ...settings,
+      ...patch,
+      palette: { ...settings.palette, ...(patch.palette || {}) },
+      background: { ...settings.background, ...(patch.background || {}) },
+      orbit: { ...settings.orbit, ...(patch.orbit || {}) }
+    };
+    return settings;
+  }
+
+  function setPalette(name, colors, applyToExisting = false) {
+    const validColors = colors.filter(color => /^#[0-9a-f]{6}$/i.test(color));
+    if (validColors.length === 0) return null;
+    settings.palette = { name, colors: validColors, applyToExisting };
+    paletteIndex = 0;
+    if (applyToExisting) {
+      nodes.forEach((node, index) => {
+        if (node.id !== 'root') node.color = validColors[index % validColors.length];
+      });
+    }
+    return settings.palette;
+  }
+
+  function eligibleOrbitPairs() {
+    const lockedIds = lockedNodeIds();
+    return edges
+      .filter(edge => !edge.locked)
+      .map(edge => {
+        const sourceId = edgeEndpointId(edge.source);
+        const targetId = edgeEndpointId(edge.target);
+        const sourceLocked = lockedIds.has(sourceId);
+        const targetLocked = lockedIds.has(targetId);
+        if (sourceLocked === targetLocked) return null;
+        const parent = getNode(sourceLocked ? sourceId : targetId);
+        const child = getNode(sourceLocked ? targetId : sourceId);
+        if (!parent || !child || child.fx !== null || child.fy !== null || lockedIds.has(child.id)) return null;
+        return { parent, child };
+      })
+      .filter(Boolean);
+  }
+
   const api = {
     getNodes: () => nodes,
     getEdges: () => edges,
@@ -214,6 +286,10 @@
     undo,
     getNode,
     connectedNodes,
+    eligibleOrbitPairs,
+    getSettings: () => settings,
+    updateSettings,
+    setPalette,
     edgeEndpointId,
     getVaultPath: () => activeVaultPath,
     setVaultPath: path => { activeVaultPath = path; }

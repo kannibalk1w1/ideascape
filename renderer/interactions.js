@@ -1,6 +1,7 @@
 (function () {
   let selectedIds = new Set();
   let focusedId = null;
+  let idleTimer = null;
 
   function toast(message) {
     const el = document.getElementById('toast');
@@ -108,6 +109,10 @@
   }
 
   function init() {
+    resetIdleTimer();
+    ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(eventName => {
+      window.addEventListener(eventName, resetIdleTimer, { passive: true });
+    });
     document.getElementById('zoom-in').addEventListener('click', () =>
       graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1.25));
     document.getElementById('zoom-out').addEventListener('click', () =>
@@ -183,6 +188,17 @@
     wireSelectionBox();
     wireKeys();
     wireMenuActions();
+  }
+
+  function resetIdleTimer() {
+    graph?.setIdle?.(false);
+    clearTimeout(idleTimer);
+    const seconds = state.getSettings().orbit.idleSeconds;
+    idleTimer = setTimeout(() => {
+      if (document.getElementById('editor-panel')?.classList.contains('hidden') === false) return;
+      if (document.getElementById('search-results')?.classList.contains('active')) return;
+      graph.setIdle(true);
+    }, Math.max(3, seconds) * 1000);
   }
 
   function wireSelectionBox() {
@@ -322,6 +338,7 @@
     focusNode,
     clearSelection,
     getSelectedIds: () => selectedIds,
-    getFocusedId: () => focusedId
+    getFocusedId: () => focusedId,
+    resetIdleTimer
   };
 }());

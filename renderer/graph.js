@@ -5,6 +5,7 @@
   let svgEdges;
   let svgNodes;
   let svgSelection;
+  let idle = false;
 
   function init() {
     if (state.getNodes().length === 0) state.initRoot(window.innerWidth, window.innerHeight);
@@ -28,6 +29,7 @@
       .force('charge', d3.forceManyBody().strength(-300))
       .force('link', d3.forceLink(state.getEdges()).id(node => node.id).distance(120).strength(0.3))
       .force('center', d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2).strength(0.05))
+      .force('orbit', orbitForce())
       .alphaDecay(0.001)
       .on('tick', tick);
 
@@ -192,6 +194,30 @@
     restart();
   }
 
+  function orbitForce() {
+    return alpha => {
+      const settings = state.getSettings().orbit;
+      if (!idle || !settings.enabled) return;
+      const scale = Math.max(0.25, 1 - state.getNodes().length / 180);
+      state.eligibleOrbitPairs().forEach(({ parent, child }) => {
+        const dx = (child.x ?? 0) - (parent.x ?? 0);
+        const dy = (child.y ?? 0) - (parent.y ?? 0);
+        const distance = Math.max(36, Math.hypot(dx, dy));
+        const tangentX = -dy / distance;
+        const tangentY = dx / distance;
+        const radial = (distance - 115) * 0.0007;
+        child.vx += (tangentX * settings.strength * scale - (dx / distance) * radial) * alpha;
+        child.vy += (tangentY * settings.strength * scale - (dy / distance) * radial) * alpha;
+      });
+    };
+  }
+
+  function setIdle(value) {
+    idle = value;
+    if (idle) simulation.alphaTarget(0.08).restart();
+    else simulation.alphaTarget(0);
+  }
+
   function restart() {
     simulation.nodes(state.getNodes());
     simulation.force('link').links(state.getEdges());
@@ -220,6 +246,7 @@
     render,
     restart,
     fitView,
+    setIdle,
     getZoom: () => zoom,
     getZoomTransform: () => zoomTransform,
     getSVG: () => d3.select('#graph'),
