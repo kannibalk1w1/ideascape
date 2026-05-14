@@ -1,38 +1,21 @@
 (function () {
   const { ipcRenderer } = require('electron');
-  const htmlToImage = require('html-to-image');
   const { GIFEncoder, quantize, applyPalette } = require('gifenc');
 
   async function exportPng() {
     const vaultPath = await ensureVaultPath();
     if (!vaultPath) return;
-    const dataUrl = await htmlToImage.toPng(document.getElementById('canvas-shell'), {
-      backgroundColor: '#101214',
-      pixelRatio: 2,
-      filter: exportFilter
-    });
-    const saved = await ipcRenderer.invoke('export:png', { vaultPath, dataUrl });
+    const saved = await withExportChromeHidden(() => ipcRenderer.invoke('export:capture-png', { vaultPath }));
     interactions.toast(`PNG exported: ${saved}`);
   }
 
   async function exportGif() {
     const vaultPath = await ensureVaultPath();
     if (!vaultPath) return;
-    const canvas = await htmlToImage.toCanvas(document.getElementById('canvas-shell'), {
-      backgroundColor: '#101214',
-      pixelRatio: 1,
-      filter: exportFilter
+    const dataUrl = await withExportChromeHidden(async () => {
+      const frame = await captureFrame();
+      return encodeGif([frame], 1400);
     });
-    const ctx = canvas.getContext('2d');
-    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const palette = quantize(frame.data, 256);
-    const index = applyPalette(frame.data, palette);
-    const gif = GIFEncoder();
-    gif.writeFrame(index, canvas.width, canvas.height, { palette, delay: 1400 });
-    gif.finish();
-    const bytes = gif.bytes();
-    const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
-    const dataUrl = `data:image/gif;base64,${btoa(binary)}`;
     const saved = await ipcRenderer.invoke('export:gif', { vaultPath, dataUrl });
     interactions.toast(`GIF exported: ${saved}`);
   }
@@ -45,32 +28,17 @@
     interactions.toast(`Rendering replay GIF (${steps.length} frames)`);
     const wasReplayOpen = replay.isOpen();
     const previousStep = replay.currentStep();
-    const gif = GIFEncoder();
-    let width = 0;
-    let height = 0;
+    const frames = [];
     try {
       for (const step of steps) {
         graph.setReplayFilter({ nodeIds: step.nodeIds, edgeIds: step.edgeIds });
         await nextFrame();
-        const canvas = await htmlToImage.toCanvas(document.getElementById('canvas-shell'), {
-          backgroundColor: '#101214',
-          pixelRatio: 1,
-          filter: exportFilter
-        });
-        width = canvas.width;
-        height = canvas.height;
-        const frame = canvas.getContext('2d').getImageData(0, 0, width, height);
-        const palette = quantize(frame.data, 256);
-        const index = applyPalette(frame.data, palette);
-        gif.writeFrame(index, width, height, { palette, delay: replay.delay() });
+        frames.push(await withExportChromeHidden(captureFrame));
       }
     } finally {
       restoreReplayView(wasReplayOpen, previousStep);
     }
-    gif.finish();
-    const bytes = gif.bytes();
-    const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
-    const dataUrl = `data:image/gif;base64,${btoa(binary)}`;
+    const dataUrl = encodeGif(frames, replay.delay());
     const saved = await ipcRenderer.invoke('export:gif', { vaultPath, dataUrl });
     interactions.toast(`Replay GIF exported: ${saved}`);
   }
@@ -93,8 +61,48 @@
     return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   }
 
-  function exportFilter(node) {
-    return !['editor-panel', 'context-menu', 'toast', 'options-panel', 'replay-panel'].includes(node.id);
+  async function withExportChromeHidden(fn) {
+    document.body.classList.add('exporting');
+    await nextFrame();
+    try {
+      return await fn();
+    } finally {
+      document.body.classList.remove('exporting');
+    }
+  }
+
+  async function captureFrame() {
+    const dataUrl = await ipcRenderer.invoke('export:capture-frame');
+    return imageDataUrlToFrame(dataUrl);
+  }
+
+  function imageDataUrlToFrame(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        resolve(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      };
+      image.onerror = () => reject(new Error('Could not read captured export frame.'));
+      image.src = dataUrl;
+    });
+  }
+
+  function encodeGif(frames, delay) {
+    const gif = GIFEncoder();
+    frames.forEach(frame => {
+      const palette = quantize(frame.data, 256);
+      const index = applyPalette(frame.data, palette);
+      gif.writeFrame(index, frame.width, frame.height, { palette, delay });
+    });
+    gif.finish();
+    const bytes = gif.bytes();
+    const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
+    return `data:image/gif;base64,${btoa(binary)}`;
   }
 
   function init() {

@@ -629,6 +629,19 @@ body.screensaver-mode #toast {
   transition: opacity 280ms ease;
 }
 
+body.exporting #zoom-controls,
+body.exporting #vault-controls,
+body.exporting #replay-panel,
+body.exporting #search-panel,
+body.exporting #outline-panel,
+body.exporting #options-panel,
+body.exporting #editor-panel,
+body.exporting #context-menu,
+body.exporting #toast {
+  opacity: 0;
+  pointer-events: none;
+}
+
 #options-panel {
   position: fixed;
   left: 16px;

@@ -84,5 +84,13 @@ ipcMain.handle('vault:chooseSkinAsset', async () => {
 });
 ipcMain.handle('vault:importAsset', async (_event, payload) => vault.importAsset(payload));
 ipcMain.handle('vault:importSkinAsset', async (_event, payload) => vault.importSkinAsset(payload));
+ipcMain.handle('export:capture-png', async (_event, payload) => {
+  const image = await mainWindow.capturePage();
+  return vault.writeExport({ ...payload, dataUrl: image.toDataURL() }, 'png');
+});
+ipcMain.handle('export:capture-frame', async () => {
+  const image = await mainWindow.capturePage();
+  return image.toDataURL();
+});
 ipcMain.handle('export:png', async (_event, payload) => vault.writeExport(payload, 'png'));
 ipcMain.handle('export:gif', async (_event, payload) => vault.writeExport(payload, 'gif'));
