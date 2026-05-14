@@ -23,7 +23,9 @@
         updateLabelVisibility();
       });
 
-    d3.select('#graph').call(zoom);
+    d3.select('#graph')
+      .call(zoom)
+      .on('dblclick.zoom', null);
 
     simulation = d3.forceSimulation(state.getNodes())
       .force('charge', d3.forceManyBody().strength(-300))

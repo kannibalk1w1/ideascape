@@ -160,7 +160,19 @@
       }
     });
 
-    document.getElementById('graph').addEventListener('contextmenu', event => event.preventDefault());
+    document.getElementById('graph').addEventListener('contextmenu', event => {
+      event.preventDefault();
+      if (event.target.closest('.node') || event.target.closest('.hit-area')) return;
+      const [x, y] = graph.screenToCanvas(event.clientX, event.clientY);
+      menu.show({
+        x: event.clientX,
+        y: event.clientY,
+        target: { x, y, screenX: event.clientX, screenY: event.clientY },
+        items: [
+          { label: 'Add node here', action: 'add-node-here' }
+        ]
+      });
+    });
 
     document.getElementById('graph').addEventListener('dblclick', event => {
       if (event.target.closest('.node') || event.target.closest('.hit-area')) return;
@@ -295,6 +307,9 @@
   function wireMenuActions() {
     document.addEventListener('menu-action', event => {
       const { action, target } = event.detail;
+      if (action === 'add-node-here') {
+        showInlineInput(target.screenX, target.screenY, target.x, target.y, 'root', 'hierarchy');
+      }
       if (action === 'add-child') {
         showInlineInput(window.innerWidth / 2, window.innerHeight / 2, (target.x ?? 0) + 150, (target.y ?? 0) + 70, target.id, 'hierarchy');
       }
