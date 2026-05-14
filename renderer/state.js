@@ -84,7 +84,10 @@
         locked: edge.locked,
         kind: edge.kind || 'association',
         style: edge.style || defaultEdgeStyle(edge.kind || 'association'),
-        direction: edge.direction || defaultEdgeDirection(edge.kind || 'association')
+        direction: edge.direction || defaultEdgeDirection(edge.kind || 'association'),
+        relation: edge.relation || null,
+        label: edge.label || '',
+        note: edge.note || ''
       })),
       timeline: timeline.map(event => ({ ...event }))
     };
@@ -300,11 +303,14 @@
       ...edge,
       kind,
       style: edge.style || defaultEdgeStyle(kind),
-      direction: edge.direction || defaultEdgeDirection(kind)
+      direction: edge.direction || defaultEdgeDirection(kind),
+      relation: edge.relation || null,
+      label: edge.label || '',
+      note: edge.note || ''
     };
   }
 
-  function addEdge({ source, target, locked = false, kind = 'association', style, direction }) {
+  function addEdge({ source, target, locked = false, kind = 'association', style, direction, relation = null, label = '', note = '' }) {
     const sourceId = edgeEndpointId(source);
     const targetId = edgeEndpointId(target);
     if (!sourceId || !targetId || sourceId === targetId) return null;
@@ -315,7 +321,7 @@
     });
     if (exists) return null;
     snapshot();
-    const edge = normaliseEdge({ id: uuid(), source: sourceId, target: targetId, locked, kind, style, direction });
+    const edge = normaliseEdge({ id: uuid(), source: sourceId, target: targetId, locked, kind, style, direction, relation, label, note });
     edges.push(edge);
     recordTimeline({ type: 'edge', edgeId: edge.id, source: sourceId, target: targetId });
     syncPins();
@@ -442,6 +448,23 @@
     if (!edge) return null;
     Object.assign(edge, patch);
     return edge;
+  }
+
+  function relationPresets() {
+    return {
+      related: { relation: 'related', label: 'related', kind: 'association', style: 'dashed', direction: 'none' },
+      parent: { relation: 'parent', label: 'parent', kind: 'hierarchy', style: 'solid', direction: 'forward' },
+      dependsOn: { relation: 'dependsOn', label: 'depends on', kind: 'association', style: 'dashed', direction: 'forward' },
+      blocks: { relation: 'blocks', label: 'blocks', kind: 'association', style: 'thick', direction: 'forward' },
+      supports: { relation: 'supports', label: 'supports', kind: 'association', style: 'solid', direction: 'forward' },
+      inspires: { relation: 'inspires', label: 'inspires', kind: 'association', style: 'dotted', direction: 'forward' }
+    };
+  }
+
+  function applyRelationPreset(id, presetId) {
+    const preset = relationPresets()[presetId];
+    if (!preset) return null;
+    return updateEdge(id, preset);
   }
 
   function removeBranch(id) {
@@ -623,6 +646,8 @@
     toggleCollapsed,
     setEdgeKind,
     updateEdge,
+    applyRelationPreset,
+    relationPresets,
     removeBranch,
     eligibleOrbitPairs,
     getSettings: () => settings,

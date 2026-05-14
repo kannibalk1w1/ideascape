@@ -74,6 +74,10 @@
         items: [
           { label: `Delete ${ids.length} nodes`, action: 'delete-selected', danger: true },
           'sep',
+          { label: 'Change colour', action: 'colour-selected' },
+          { label: 'Randomize planets', action: 'skin-selected-randomize' },
+          { label: 'Arrange selected cluster', action: 'arrange-selected-cluster' },
+          'sep',
           { label: 'Lock connected edges', action: 'lock-selected-edges' },
           { label: 'Unlock connected edges', action: 'unlock-selected-edges' }
         ]
@@ -118,6 +122,15 @@
       items: [
         { label: edge.locked ? 'Unlock connection' : 'Lock connection', action: edge.locked ? 'unlock-edge' : 'lock-edge' },
         { label: edge.kind === 'hierarchy' ? 'Make association link' : 'Make hierarchy link', action: edge.kind === 'hierarchy' ? 'make-association' : 'make-hierarchy' },
+        { label: edge.label ? `Edit label: ${edge.label}` : 'Add label', action: 'edit-edge-label' },
+        { label: edge.note ? 'Edit connector note' : 'Add connector note', action: 'edit-edge-note' },
+        'sep',
+        { label: 'Relation: Related', action: 'relation-related' },
+        { label: 'Relation: Parent', action: 'relation-parent' },
+        { label: 'Relation: Depends on', action: 'relation-dependsOn' },
+        { label: 'Relation: Blocks', action: 'relation-blocks' },
+        { label: 'Relation: Supports', action: 'relation-supports' },
+        { label: 'Relation: Inspires', action: 'relation-inspires' },
         'sep',
         { label: 'Style: Solid', action: 'edge-style-solid' },
         { label: 'Style: Dashed', action: 'edge-style-dashed' },
@@ -318,7 +331,7 @@
 
   function wireKeys() {
     document.addEventListener('keydown', event => {
-      if (event.target.closest('.cm-editor') || event.target.tagName === 'INPUT') return;
+      if (event.target.closest('.cm-editor') || ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
       if (event.key === 'Escape') {
         clearSelection();
         menu.hide();
@@ -348,6 +361,16 @@
       if ((event.ctrlKey || event.metaKey) && event.key === '-') {
         event.preventDefault();
         graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1 / 1.25);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        vaultClient.saveVault().then(result => {
+          if (result) toast('Vault saved');
+        });
+      }
+      if (!event.ctrlKey && !event.metaKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        graph.fitView();
       }
     });
   }
@@ -452,6 +475,22 @@
         state.updateEdge(target.id, { direction: action.replace('edge-dir-', '') });
         graph.render();
       }
+      if (action === 'edit-edge-label') {
+        const label = prompt('Connector label', target.label || '');
+        if (label !== null) {
+          state.updateEdge(target.id, { label: label.trim() });
+          graph.render();
+        }
+      }
+      if (action === 'edit-edge-note') {
+        const note = prompt('Connector note', target.note || '');
+        if (note !== null) state.updateEdge(target.id, { note: note.trim() });
+      }
+      if (action.startsWith('relation-')) {
+        state.applyRelationPreset(target.id, action.replace('relation-', ''));
+        graph.render();
+        mindmap.renderOutline();
+      }
       if (action === 'delete-selected') {
         target.ids.forEach(id => state.removeNode(id));
         clearSelection();
@@ -466,7 +505,38 @@
           .forEach(edge => state.setEdgeLocked(edge.id, lock));
         graph.render();
       }
+      if (action === 'colour-selected') {
+        const color = prompt('Hex colour for selected nodes', '#a3e635');
+        if (/^#[0-9a-f]{6}$/i.test(color || '')) {
+          target.ids.forEach(id => state.updateNode(id, { color }));
+          graph.render();
+        }
+      }
+      if (action === 'skin-selected-randomize') {
+        target.ids.forEach(id => state.setNodeSkin(id, state.randomPlanetSkin()));
+        skins.clearCache();
+        graph.render();
+      }
+      if (action === 'arrange-selected-cluster') {
+        arrangeSelectedCluster(target.ids);
+      }
     });
+  }
+
+  function arrangeSelectedCluster(ids) {
+    const selected = ids.map(id => state.getNode(id)).filter(Boolean);
+    if (!selected.length) return;
+    const cx = selected.reduce((sum, node) => sum + (node.x ?? 0), 0) / selected.length;
+    const cy = selected.reduce((sum, node) => sum + (node.y ?? 0), 0) / selected.length;
+    const radius = Math.max(70, selected.length * 18);
+    selected.forEach((node, index) => {
+      const angle = (Math.PI * 2 * index) / selected.length;
+      state.updateNode(node.id, {
+        x: cx + Math.cos(angle) * radius,
+        y: cy + Math.sin(angle) * radius
+      });
+    });
+    graph.render();
   }
 
   async function importCustomSkin(node) {

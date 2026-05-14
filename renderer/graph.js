@@ -49,6 +49,10 @@
       .attr('x2', edge => edge.target.x ?? 0)
       .attr('y2', edge => edge.target.y ?? 0);
 
+    svgEdges.selectAll('.edge-label')
+      .attr('x', edge => ((edge.source.x ?? 0) + (edge.target.x ?? 0)) / 2)
+      .attr('y', edge => ((edge.source.y ?? 0) + (edge.target.y ?? 0)) / 2 - 8);
+
     svgNodes.selectAll('.node')
       .attr('transform', node => `translate(${node.x ?? 0},${node.y ?? 0})`);
   }
@@ -107,6 +111,15 @@
       .attr('data-id', edge => edge.id)
       .attr('stroke', '#fff');
     hit.exit().remove();
+
+    const labels = svgEdges.selectAll('.edge-label').data(edges.filter(edge => edge.label), edge => edge.id);
+    labels.enter()
+      .append('text')
+      .attr('class', 'edge-label')
+      .merge(labels)
+      .attr('fill', edge => edgeColour(edge))
+      .text(edge => edge.label);
+    labels.exit().remove();
   }
 
   function edgeStrokeWidth(edge) {

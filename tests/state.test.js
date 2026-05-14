@@ -62,6 +62,35 @@ test('updateEdge changes connector style and direction', () => {
   expect(state.getEdges()[0]).toMatchObject({ style: 'dotted', direction: 'both' });
 });
 
+test('edges can store labels, notes, and relation presets', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const edge = state.addEdge({ source: 'root', target: child.id });
+  state.updateEdge(edge.id, { label: 'depends on', note: 'Needed before the next step.' });
+  expect(state.getEdges()[0]).toMatchObject({ label: 'depends on', note: 'Needed before the next step.' });
+
+  state.applyRelationPreset(edge.id, 'blocks');
+  expect(state.getEdges()[0]).toMatchObject({
+    relation: 'blocks',
+    label: 'blocks',
+    kind: 'association',
+    style: 'thick',
+    direction: 'forward'
+  });
+});
+
+test('clone and load preserve connector labels, notes, and relations', () => {
+  const child = state.addNode({ label: 'Child', x: 0, y: 0 });
+  const edge = state.addEdge({ source: 'root', target: child.id, label: 'supports', note: 'Evidence link', relation: 'supports' });
+  const graph = state.cloneGraph();
+  state.initRoot(800, 600);
+  state.loadGraph(graph);
+  expect(state.getEdges().find(item => item.id === edge.id)).toMatchObject({
+    label: 'supports',
+    note: 'Evidence link',
+    relation: 'supports'
+  });
+});
+
 test('locking an edge pins both endpoints', () => {
   const node = state.addNode({ label: 'A', x: 50, y: 80 });
   const edge = state.addEdge({ source: 'root', target: node.id });

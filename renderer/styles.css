@@ -303,6 +303,17 @@ select {
   cursor: context-menu;
 }
 
+.edge-label {
+  font-size: 11px;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgba(16, 18, 20, 0.9);
+  stroke-linejoin: round;
+  stroke-width: 4;
+  text-anchor: middle;
+  user-select: none;
+}
+
 .edge.pulse {
   opacity: 0.45;
   stroke-linecap: round;
