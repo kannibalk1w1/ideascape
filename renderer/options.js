@@ -6,10 +6,13 @@
     document.getElementById('toggle-options').addEventListener('click', open);
     document.getElementById('close-options').addEventListener('click', close);
     document.getElementById('import-palette').addEventListener('click', importPalette);
+    document.getElementById('save-palette').addEventListener('click', savePalette);
+    document.getElementById('use-palette').addEventListener('click', usePalette);
+    document.getElementById('delete-palette').addEventListener('click', deletePalette);
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
-    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle', 'skin-mode', 'skin-detail', 'skin-rings', 'tint-custom-skins']
+    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle', 'skin-mode', 'skin-detail', 'skin-rings', 'tint-custom-skins', 'evolution-enabled', 'evolve-rocky', 'evolve-gas', 'evolve-star', 'evolve-black-hole']
       .forEach(id => document.getElementById(id).addEventListener('input', syncFromControls));
 
     render();
@@ -41,6 +44,15 @@
     document.getElementById('skin-detail').value = settings.skins.detail;
     document.getElementById('skin-rings').value = settings.skins.rings;
     document.getElementById('tint-custom-skins').checked = settings.skins.tintCustom;
+    document.getElementById('evolution-enabled').checked = settings.skins.evolutionEnabled;
+    document.getElementById('evolve-rocky').value = settings.skins.evolutionThresholds.rocky;
+    document.getElementById('evolve-gas').value = settings.skins.evolutionThresholds.gasGiant;
+    document.getElementById('evolve-star').value = settings.skins.evolutionThresholds.star;
+    document.getElementById('evolve-black-hole').value = settings.skins.evolutionThresholds.blackHole;
+    document.getElementById('palette-name').value = settings.palette.name || '';
+    document.getElementById('saved-palettes').innerHTML = settings.palette.library
+      .map(item => `<option value="${item.id}"${item.id === settings.palette.activeId ? ' selected' : ''}>${escapeHtml(item.name)}</option>`)
+      .join('');
     renderSwatches();
   }
 
@@ -73,7 +85,14 @@
         mode: document.getElementById('skin-mode').value,
         detail: document.getElementById('skin-detail').value,
         rings: document.getElementById('skin-rings').value,
-        tintCustom: document.getElementById('tint-custom-skins').checked
+        tintCustom: document.getElementById('tint-custom-skins').checked,
+        evolutionEnabled: document.getElementById('evolution-enabled').checked,
+        evolutionThresholds: {
+          rocky: Number(document.getElementById('evolve-rocky').value),
+          gasGiant: Number(document.getElementById('evolve-gas').value),
+          star: Number(document.getElementById('evolve-star').value),
+          blackHole: Number(document.getElementById('evolve-black-hole').value)
+        }
       }
     });
     background.refresh();
@@ -92,6 +111,39 @@
     renderSwatches();
     graph.render();
     interactions.toast(`Imported ${parsed.colors.length} colours`);
+  }
+
+  function savePalette() {
+    const name = document.getElementById('palette-name').value.trim();
+    const saved = state.savePalette(name, state.getSettings().palette.colors);
+    if (!saved) {
+      interactions.toast('Palette needs a name and colours');
+      return;
+    }
+    render();
+    interactions.toast(`Saved palette: ${saved.name}`);
+  }
+
+  function usePalette() {
+    const id = document.getElementById('saved-palettes').value;
+    const paletteState = state.useSavedPalette(id, document.getElementById('apply-palette-existing').checked);
+    if (!paletteState) return;
+    render();
+    graph.render();
+    interactions.toast(`Using palette: ${paletteState.name}`);
+  }
+
+  function deletePalette() {
+    const id = document.getElementById('saved-palettes').value;
+    if (state.deleteSavedPalette(id)) {
+      render();
+      graph.render();
+      interactions.toast('Palette deleted');
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
   }
 
   async function ensureVault() {

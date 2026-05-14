@@ -148,6 +148,9 @@
 
   function nodeSkinUrl(node) {
     const mode = state.getSettings().skins.mode;
+    if (state.getSettings().skins.evolutionEnabled && node.id !== 'root' && node.skin?.type !== 'custom') {
+      return skins.skinUrl({ ...node, skin: evolvedSkin(node) });
+    }
     if (node.skin?.type === 'custom' || node.skin?.type === 'planet') return skins.skinUrl(node);
     if (mode === 'planets' && node.id !== 'root') {
       return skins.skinUrl({ ...node, skin: virtualPlanetSkin(node, 0) });
@@ -159,6 +162,22 @@
       }
     }
     return null;
+  }
+
+  function evolvedSkin(node) {
+    const variant = state.evolvedVariant(node.id);
+    const variantMap = {
+      planetoid: 'asteroid',
+      rocky: 'rocky',
+      gasGiant: 'marble',
+      star: 'star',
+      blackHole: 'blackHole'
+    };
+    return {
+      type: 'planet',
+      variant: variantMap[variant] || 'rocky',
+      seed: state.descendantCount(node.id) * 997 + node.id.length
+    };
   }
 
   function ensureTintFilter(node) {

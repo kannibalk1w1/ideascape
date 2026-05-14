@@ -39,6 +39,17 @@
             Apply to existing nodes
           </label>
           <button id="import-palette">Import palette</button>
+          <div class="button-row">
+            <input id="palette-name" type="text" placeholder="Palette name">
+            <button id="save-palette">Save palette</button>
+          </div>
+          <label>Saved palettes
+            <select id="saved-palettes"></select>
+          </label>
+          <div class="button-row">
+            <button id="use-palette">Use saved</button>
+            <button id="delete-palette">Delete saved</button>
+          </div>
           <div id="palette-swatches"></div>
         </section>
 
@@ -93,6 +104,11 @@
             </select>
           </label>
           <label class="check-row"><input id="tint-custom-skins" type="checkbox"> Tint custom sprites</label>
+          <label class="check-row"><input id="evolution-enabled" type="checkbox"> Auto-evolve by descendants</label>
+          <label>Rocky planet at <input id="evolve-rocky" type="number" min="1" max="999"></label>
+          <label>Gas giant at <input id="evolve-gas" type="number" min="1" max="999"></label>
+          <label>Star at <input id="evolve-star" type="number" min="1" max="999"></label>
+          <label>Black hole at <input id="evolve-black-hole" type="number" min="1" max="999"></label>
         </section>
       </aside>
 

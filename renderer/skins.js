@@ -30,6 +30,8 @@
     }));
     const hasRing = skin.variant === 'ringed' || (rings === 'common' && rand() > 0.45) || (rings === 'rare' && rand() > 0.82);
     const tint = node.color || '#a3e635';
+    if (skin.variant === 'star') return starDataUrl(tint, skin.seed || 1);
+    if (skin.variant === 'blackHole') return blackHoleDataUrl(tint);
     const rough = skin.variant === 'asteroid';
     const radius = rough ? 43 : 45;
     const blob = rough
@@ -56,6 +58,22 @@
         <g clip-path="path('${blob}')">${bands}${craterSvg}</g>
         <ellipse cx="48" cy="38" rx="19" ry="10" fill="rgba(255,255,255,.22)" filter="url(#soft)" transform="rotate(-28 48 38)"/>
       </svg>`;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  }
+
+  function starDataUrl(tint, seed) {
+    const rand = seeded(seed);
+    const spikes = Array.from({ length: 10 }, (_, i) => {
+      const a = Math.PI * 2 * i / 10;
+      const r = i % 2 ? 44 + rand() * 7 : 58 + rand() * 12;
+      return `${64 + Math.cos(a) * r},${64 + Math.sin(a) * r}`;
+    }).join(' ');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><radialGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset=".42" stop-color="${tint}"/><stop offset="1" stop-color="#111"/></radialGradient><filter id="b"><feGaussianBlur stdDeviation="4"/></filter></defs><circle cx="64" cy="64" r="48" fill="${tint}" opacity=".28" filter="url(#b)"/><polygon points="${spikes}" fill="url(#g)"/><circle cx="64" cy="64" r="28" fill="#fff" opacity=".38"/></svg>`;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  }
+
+  function blackHoleDataUrl(tint) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><radialGradient id="hole"><stop offset="0" stop-color="#000"/><stop offset=".55" stop-color="#050505"/><stop offset="1" stop-color="#2d2d2d"/></radialGradient><linearGradient id="disk" x1="0" x2="1"><stop offset="0" stop-color="${tint}" stop-opacity=".05"/><stop offset=".5" stop-color="${tint}" stop-opacity=".9"/><stop offset="1" stop-color="${tint}" stop-opacity=".05"/></linearGradient></defs><ellipse cx="64" cy="70" rx="58" ry="15" fill="none" stroke="url(#disk)" stroke-width="11" transform="rotate(-10 64 70)"/><circle cx="64" cy="64" r="36" fill="url(#hole)"/><circle cx="64" cy="64" r="24" fill="#000"/></svg>`;
     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
   }
 

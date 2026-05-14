@@ -5,6 +5,7 @@
   let nodes = [];
   let edges = [];
   let undoStack = [];
+  let redoStack = [];
   let paletteIndex = 0;
   let activeVaultPath = null;
   let settings = defaultSettings();
@@ -12,9 +13,11 @@
   function defaultSettings() {
     return {
       palette: {
+        activeId: 'default',
         name: 'IdeaScape Default',
         colors: [...PALETTE],
-        applyToExisting: false
+        applyToExisting: false,
+        library: [{ id: 'default', name: 'IdeaScape Default', colors: [...PALETTE] }]
       },
       background: {
         enabled: true,
@@ -40,7 +43,15 @@
         mode: 'circles',
         tintCustom: true,
         rings: 'rare',
-        detail: 'medium'
+        detail: 'medium',
+        evolutionEnabled: false,
+        evolutionThresholds: {
+          planetoid: 0,
+          rocky: 5,
+          gasGiant: 15,
+          star: 30,
+          blackHole: 50
+        }
       }
     };
   }
@@ -75,6 +86,27 @@
   function snapshot() {
     undoStack.push(JSON.stringify(cloneGraph()));
     if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack = [];
+  }
+
+  function mergeSettings(loaded) {
+    const defaults = defaultSettings();
+    const merged = { ...defaults, ...loaded };
+    merged.palette = { ...defaults.palette, ...(loaded.palette || {}) };
+    merged.palette.library = loaded.palette?.library || defaults.palette.library;
+    merged.background = { ...defaults.background, ...(loaded.background || {}) };
+    merged.orbit = { ...defaults.orbit, ...(loaded.orbit || {}) };
+    merged.screensaver = { ...defaults.screensaver, ...(loaded.screensaver || {}) };
+    merged.skins = { ...defaults.skins, ...(loaded.skins || {}) };
+    merged.skins.evolutionThresholds = { ...defaults.skins.evolutionThresholds, ...(loaded.skins?.evolutionThresholds || {}) };
+    return merged;
+  }
+
+  function restoreGraph(graph) {
+    nodes = graph.nodes.map(node => ({ collapsed: false, skin: { type: 'circle' }, ...node }));
+    edges = graph.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
+    settings = mergeSettings(graph.settings || {});
+    syncPins();
   }
 
   function lockedNodeIds() {
@@ -119,21 +151,15 @@
     }];
     edges = [];
     undoStack = [];
+    redoStack = [];
     paletteIndex = 0;
     settings = defaultSettings();
   }
 
   function loadGraph(graph) {
-    nodes = graph.nodes.map(node => ({ collapsed: false, skin: { type: 'circle' }, ...node }));
-    edges = graph.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
-    settings = { ...defaultSettings(), ...(graph.settings || {}) };
-    settings.palette = { ...defaultSettings().palette, ...(graph.settings?.palette || {}) };
-    settings.background = { ...defaultSettings().background, ...(graph.settings?.background || {}) };
-    settings.orbit = { ...defaultSettings().orbit, ...(graph.settings?.orbit || {}) };
-    settings.screensaver = { ...defaultSettings().screensaver, ...(graph.settings?.screensaver || {}) };
-    settings.skins = { ...defaultSettings().skins, ...(graph.settings?.skins || {}) };
+    restoreGraph(graph);
     undoStack = [];
-    syncPins();
+    redoStack = [];
   }
 
   function addNode({ label, x, y, color, markdown }) {
@@ -250,9 +276,16 @@
   function undo() {
     if (undoStack.length === 0) return false;
     const previous = JSON.parse(undoStack.pop());
-    nodes = previous.nodes.map(node => ({ collapsed: false, ...node }));
-    edges = previous.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
-    settings = previous.settings || settings;
+    redoStack.push(JSON.stringify(cloneGraph()));
+    restoreGraph(previous);
+    return true;
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return false;
+    undoStack.push(JSON.stringify(cloneGraph()));
+    const next = JSON.parse(redoStack.pop());
+    restoreGraph(next);
     return true;
   }
 
@@ -337,6 +370,7 @@
   }
 
   function updateSettings(patch) {
+    snapshot();
     settings = {
       ...settings,
       ...patch,
@@ -344,15 +378,20 @@
       background: { ...settings.background, ...(patch.background || {}) },
       orbit: { ...settings.orbit, ...(patch.orbit || {}) },
       screensaver: { ...settings.screensaver, ...(patch.screensaver || {}) },
-      skins: { ...settings.skins, ...(patch.skins || {}) }
+      skins: {
+        ...settings.skins,
+        ...(patch.skins || {}),
+        evolutionThresholds: { ...settings.skins.evolutionThresholds, ...(patch.skins?.evolutionThresholds || {}) }
+      }
     };
     return settings;
   }
 
-  function setPalette(name, colors, applyToExisting = false) {
+  function setPalette(name, colors, applyToExisting = false, activeId = null) {
     const validColors = colors.filter(color => /^#[0-9a-f]{6}$/i.test(color));
     if (validColors.length === 0) return null;
-    settings.palette = { name, colors: validColors, applyToExisting };
+    snapshot();
+    settings.palette = { ...settings.palette, activeId, name, colors: validColors, applyToExisting };
     paletteIndex = 0;
     if (applyToExisting) {
       nodes.forEach((node, index) => {
@@ -360,6 +399,39 @@
       });
     }
     return settings.palette;
+  }
+
+  function savePalette(name, colors) {
+    const validColors = colors.filter(color => /^#[0-9a-f]{6}$/i.test(color));
+    if (!name || validColors.length === 0) return null;
+    snapshot();
+    const id = `palette-${uuid()}`;
+    const saved = { id, name, colors: validColors };
+    settings.palette.library = [...settings.palette.library.filter(item => item.name !== name), saved];
+    settings.palette.activeId = id;
+    settings.palette.name = name;
+    settings.palette.colors = validColors;
+    paletteIndex = 0;
+    return saved;
+  }
+
+  function useSavedPalette(id, applyToExisting = false) {
+    const saved = settings.palette.library.find(item => item.id === id);
+    if (!saved) return null;
+    return setPalette(saved.name, saved.colors, applyToExisting, id);
+  }
+
+  function deleteSavedPalette(id) {
+    if (id === 'default') return false;
+    snapshot();
+    settings.palette.library = settings.palette.library.filter(item => item.id !== id);
+    if (settings.palette.activeId === id) {
+      const fallback = settings.palette.library[0] || defaultSettings().palette.library[0];
+      settings.palette.activeId = fallback.id;
+      settings.palette.name = fallback.name;
+      settings.palette.colors = fallback.colors;
+    }
+    return true;
   }
 
   function eligibleOrbitPairs() {
@@ -396,6 +468,20 @@
     };
   }
 
+  function descendantCount(id) {
+    return branchIds(id, false).length;
+  }
+
+  function evolvedVariant(id) {
+    const count = descendantCount(id);
+    const thresholds = settings.skins.evolutionThresholds;
+    if (count >= thresholds.blackHole) return 'blackHole';
+    if (count >= thresholds.star) return 'star';
+    if (count >= thresholds.gasGiant) return 'gasGiant';
+    if (count >= thresholds.rocky) return 'rocky';
+    return 'planetoid';
+  }
+
   function setNodeSkin(id, skin) {
     return updateNode(id, { skin });
   }
@@ -416,6 +502,7 @@
     pinNode,
     unpinNode,
     undo,
+    redo,
     getNode,
     connectedNodes,
     hierarchyChildren,
@@ -430,8 +517,13 @@
     getSettings: () => settings,
     updateSettings,
     setPalette,
+    savePalette,
+    useSavedPalette,
+    deleteSavedPalette,
     randomPlanetSkin,
     setNodeSkin,
+    descendantCount,
+    evolvedVariant,
     edgeEndpointId,
     getVaultPath: () => activeVaultPath,
     setVaultPath: path => { activeVaultPath = path; }

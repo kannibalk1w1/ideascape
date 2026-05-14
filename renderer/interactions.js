@@ -320,12 +320,15 @@
         graph.render();
         search.update();
       }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+      const wantsUndo = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z';
+      const wantsRedo = (event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z'));
+      if (wantsUndo || wantsRedo) {
         event.preventDefault();
-        if (state.undo()) {
+        if ((wantsRedo ? state.redo() : state.undo())) {
           clearSelection();
           graph.render();
           search.update();
+          mindmap.renderOutline();
         }
       }
       if ((event.ctrlKey || event.metaKey) && (event.key === '=' || event.key === '+')) {

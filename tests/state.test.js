@@ -95,6 +95,18 @@ test('undo restores previous graph snapshot', () => {
   expect(state.getNodes()).toHaveLength(1);
 });
 
+test('redo reapplies an undone graph snapshot and clears after new edits', () => {
+  const node = state.addNode({ label: 'Redo Me', x: 0, y: 0 });
+  expect(state.undo()).toBe(true);
+  expect(state.getNode(node.id)).toBeUndefined();
+  expect(state.redo()).toBe(true);
+  expect(state.getNode(node.id).label).toBe('Redo Me');
+
+  state.undo();
+  state.addNode({ label: 'Different Path', x: 0, y: 0 });
+  expect(state.redo()).toBe(false);
+});
+
 test('updateNodeContent does not add graph undo snapshots', () => {
   const node = state.addNode({ label: 'Note', x: 0, y: 0 });
   state.updateNodeContent(node.id, '# Changed');
@@ -119,6 +131,24 @@ test('setPalette changes future node colours and can recolour existing nodes', (
 
   state.setPalette('Apply', ['#333333'], true);
   expect(state.getNode(existing.id).color).toBe('#333333');
+});
+
+test('saved palettes persist in graph settings and can be activated or deleted', () => {
+  const saved = state.savePalette('Night Garden', ['#101010', '#88cc44']);
+  expect(saved.id).toBe('palette-uuid-1');
+  expect(state.getSettings().palette.library).toContainEqual(saved);
+
+  const graph = state.cloneGraph();
+  state.initRoot(800, 600);
+  state.loadGraph(graph);
+  expect(state.getSettings().palette.library).toContainEqual(saved);
+
+  state.useSavedPalette(saved.id);
+  expect(state.getSettings().palette.activeId).toBe(saved.id);
+  expect(state.getSettings().palette.colors).toEqual(['#101010', '#88cc44']);
+  expect(state.deleteSavedPalette(saved.id)).toBe(true);
+  expect(state.getSettings().palette.library.find(item => item.id === saved.id)).toBeUndefined();
+  expect(state.deleteSavedPalette('default')).toBe(false);
 });
 
 test('settings include screensaver defaults and merge loaded settings', () => {
@@ -168,6 +198,21 @@ test('collapsed branches hide descendants from visible node ids', () => {
 
   expect(state.visibleNodeIds().has(child.id)).toBe(true);
   expect(state.visibleNodeIds().has(grandchild.id)).toBe(false);
+});
+
+test('descendant count drives evolved node variants from editable thresholds', () => {
+  const parent = state.addNode({ label: 'Parent', x: 0, y: 0 });
+  let current = parent;
+  for (let index = 0; index < 5; index += 1) {
+    const child = state.addNode({ label: `Child ${index}`, x: 0, y: 0 });
+    state.addEdge({ source: current.id, target: child.id, kind: 'hierarchy' });
+    current = child;
+  }
+
+  expect(state.descendantCount(parent.id)).toBe(5);
+  expect(state.evolvedVariant(parent.id)).toBe('rocky');
+  state.updateSettings({ skins: { evolutionThresholds: { gasGiant: 5, star: 6, blackHole: 7 } } });
+  expect(state.evolvedVariant(parent.id)).toBe('gasGiant');
 });
 
 test('undo restores edge kind and collapsed state', () => {
