@@ -8,12 +8,15 @@
     document.getElementById('toggle-replay').addEventListener('click', open);
     document.getElementById('replay-close').addEventListener('click', close);
     document.getElementById('replay-play').addEventListener('click', togglePlay);
+    document.getElementById('replay-prev').addEventListener('click', previous);
+    document.getElementById('replay-next').addEventListener('click', next);
     document.getElementById('export-replay-gif').addEventListener('click', () =>
       exporter.exportReplayGif().catch(error => interactions.toast(error.message)));
     document.getElementById('replay-range').addEventListener('input', event => {
       stop();
       show(Number(event.target.value));
     });
+    document.addEventListener('keydown', handleKeys);
   }
 
   function open() {
@@ -45,8 +48,18 @@
         stop();
         return;
       }
-      show(currentIndex + 1);
+      next(false);
     }, replayDelay());
+  }
+
+  function previous(shouldStop = true) {
+    if (shouldStop) stop();
+    show(currentIndex - 1);
+  }
+
+  function next(shouldStop = true) {
+    if (shouldStop) stop();
+    show(currentIndex + 1);
   }
 
   function replayDelay() {
@@ -91,6 +104,22 @@
 
   function delay() {
     return replayDelay();
+  }
+
+  function handleKeys(event) {
+    if (!isOpen() || event.target.closest('.cm-editor') || ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      previous();
+    }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      next();
+    }
+    if (event.key === ' ') {
+      event.preventDefault();
+      togglePlay();
+    }
   }
 
   window.replay = { init, open, close, showStep, isOpen, currentStep, delay };
