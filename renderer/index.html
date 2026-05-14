@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IdeaScape</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="app">
+    <section id="canvas-shell" aria-label="Idea graph canvas">
+      <div id="zoom-controls" class="toolbar cluster">
+        <button id="zoom-in" title="Zoom in">+</button>
+        <button id="zoom-out" title="Zoom out">-</button>
+        <button id="fit-view" title="Fit view">Fit</button>
+      </div>
+
+      <div id="vault-controls" class="toolbar cluster">
+        <button id="new-vault">New vault</button>
+        <button id="open-vault">Open vault</button>
+        <button id="save-vault">Save</button>
+        <button id="export-png">PNG</button>
+        <button id="export-gif">GIF</button>
+      </div>
+
+      <div id="search-panel">
+        <input id="search-input" type="search" placeholder="Search nodes" autocomplete="off">
+        <div id="search-results"></div>
+      </div>
+
+      <svg id="graph" role="img" aria-label="IdeaScape graph">
+        <g id="zoom-layer">
+          <g id="edges"></g>
+          <g id="selection-layer"></g>
+          <g id="nodes"></g>
+        </g>
+      </svg>
+    </section>
+
+    <aside id="editor-panel" class="hidden">
+      <header>
+        <div>
+          <span id="editor-kicker">Markdown note</span>
+          <h1 id="editor-title">Untitled</h1>
+        </div>
+        <button id="close-editor" title="Close editor">Close</button>
+      </header>
+      <div id="editor-toolbar">
+        <button data-md="heading">H</button>
+        <button data-md="bold">B</button>
+        <button data-md="italic">I</button>
+        <button data-md="bullet">Bullets</button>
+        <button data-md="numbered">Numbers</button>
+        <button data-md="link">Link</button>
+        <button data-md="image">Image</button>
+        <input id="text-colour" type="color" value="#a3e635" title="Text colour">
+      </div>
+      <div id="editor-host"></div>
+      <section id="preview-panel">
+        <h2>Preview</h2>
+        <article id="markdown-preview"></article>
+      </section>
+    </aside>
+
+    <div id="context-menu"></div>
+    <div id="toast" aria-live="polite"></div>
+  </main>
+
+  <script src="../node_modules/d3/dist/d3.min.js"></script>
+  <script src="./state.js"></script>
+  <script src="./vault-client.js"></script>
+  <script src="./graph.js"></script>
+  <script src="./menu.js"></script>
+  <script src="./editor.js"></script>
+  <script src="./search.js"></script>
+  <script src="./exporter.js"></script>
+  <script src="./interactions.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

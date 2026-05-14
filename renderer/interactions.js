@@ -1,0 +1,327 @@
+(function () {
+  let selectedIds = new Set();
+  let focusedId = null;
+
+  function toast(message) {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.classList.add('active');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => el.classList.remove('active'), 2600);
+  }
+
+  function clearSelection() {
+    selectedIds.clear();
+    focusedId = null;
+    graph.render();
+  }
+
+  function setSelected(ids) {
+    selectedIds = new Set(ids);
+    graph.render();
+  }
+
+  function focusNode(id) {
+    focusedId = id;
+    selectedIds = new Set([id]);
+    graph.render();
+  }
+
+  function showInlineInput(screenX, screenY, canvasX, canvasY, parentId = 'root') {
+    document.getElementById('node-inline-input')?.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = 'node-inline-input';
+    wrapper.className = 'node-input-wrapper';
+    wrapper.style.left = `${screenX - 80}px`;
+    wrapper.style.top = `${screenY - 14}px`;
+    const input = document.createElement('input');
+    input.className = 'node-input';
+    input.placeholder = 'Node name';
+    wrapper.appendChild(input);
+    document.body.appendChild(wrapper);
+    input.focus();
+
+    function confirm() {
+      const label = input.value.trim();
+      wrapper.remove();
+      if (!label) return;
+      const node = state.addNode({ label, x: canvasX, y: canvasY });
+      state.addEdge({ source: parentId, target: node.id });
+      focusNode(node.id);
+      graph.render();
+      search.update();
+    }
+
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Enter') confirm();
+      if (event.key === 'Escape') wrapper.remove();
+      event.stopPropagation();
+    });
+  }
+
+  function showNodeMenu(x, y, node) {
+    const multi = selectedIds.size > 1 && selectedIds.has(node.id);
+    if (multi) {
+      const ids = [...selectedIds];
+      menu.show({
+        x,
+        y,
+        target: { ids },
+        items: [
+          { label: `Delete ${ids.length} nodes`, action: 'delete-selected', danger: true },
+          'sep',
+          { label: 'Lock connected edges', action: 'lock-selected-edges' },
+          { label: 'Unlock connected edges', action: 'unlock-selected-edges' }
+        ]
+      });
+      return;
+    }
+
+    focusNode(node.id);
+    menu.show({
+      x,
+      y,
+      target: node,
+      items: [
+        { label: 'Add connected node', action: 'add-child' },
+        { label: 'Open note', action: 'open-note' },
+        { label: 'Edit label', action: 'edit-label' },
+        { label: 'Change colour', action: 'change-colour' },
+        { label: node.pinnedLabel ? 'Allow label hiding' : 'Always show label', action: 'toggle-label-pin' },
+        'sep',
+        { label: 'Delete', action: 'delete-node', danger: true }
+      ]
+    });
+  }
+
+  function showEdgeMenu(x, y, edge) {
+    menu.show({
+      x,
+      y,
+      target: edge,
+      items: [
+        { label: edge.locked ? 'Unlock connection' : 'Lock connection', action: edge.locked ? 'unlock-edge' : 'lock-edge' },
+        'sep',
+        { label: 'Delete connection', action: 'delete-edge', danger: true }
+      ]
+    });
+  }
+
+  function init() {
+    document.getElementById('zoom-in').addEventListener('click', () =>
+      graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1.25));
+    document.getElementById('zoom-out').addEventListener('click', () =>
+      graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1 / 1.25));
+    document.getElementById('fit-view').addEventListener('click', graph.fitView);
+
+    document.getElementById('new-vault').addEventListener('click', async () => {
+      const result = await vaultClient.createVault();
+      if (result) toast(`Vault ready: ${result.vaultPath}`);
+    });
+    document.getElementById('open-vault').addEventListener('click', async () => {
+      const result = await vaultClient.openVault();
+      if (result) {
+        graph.render();
+        search.update();
+        toast(`Opened vault: ${result.vaultPath}`);
+      }
+    });
+    document.getElementById('save-vault').addEventListener('click', async () => {
+      const result = await vaultClient.saveVault();
+      if (result) {
+        graph.render();
+        search.update();
+        toast('Vault saved');
+      }
+    });
+
+    document.getElementById('graph').addEventListener('contextmenu', event => event.preventDefault());
+
+    document.getElementById('graph').addEventListener('dblclick', event => {
+      if (event.target.closest('.node') || event.target.closest('.hit-area')) return;
+      const [x, y] = graph.screenToCanvas(event.clientX, event.clientY);
+      showInlineInput(event.clientX, event.clientY, x, y);
+    });
+
+    document.getElementById('nodes').addEventListener('click', event => {
+      const nodeEl = event.target.closest('.node');
+      if (!nodeEl) return;
+      const id = nodeEl.dataset.id;
+      if (event.shiftKey) {
+        selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
+        graph.render();
+        return;
+      }
+      focusNode(id);
+    });
+
+    document.getElementById('nodes').addEventListener('dblclick', event => {
+      const nodeEl = event.target.closest('.node');
+      if (!nodeEl) return;
+      const node = state.getNode(nodeEl.dataset.id);
+      if (node) editor.open(node);
+    });
+
+    document.getElementById('nodes').addEventListener('contextmenu', event => {
+      const nodeEl = event.target.closest('.node');
+      if (!nodeEl) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const node = state.getNode(nodeEl.dataset.id);
+      if (node) showNodeMenu(event.clientX, event.clientY, node);
+    });
+
+    document.getElementById('edges').addEventListener('contextmenu', event => {
+      const edgeEl = event.target.closest('.hit-area');
+      if (!edgeEl) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const edge = state.getEdges().find(item => item.id === edgeEl.dataset.id);
+      if (edge) showEdgeMenu(event.clientX, event.clientY, edge);
+    });
+
+    wireSelectionBox();
+    wireKeys();
+    wireMenuActions();
+  }
+
+  function wireSelectionBox() {
+    const svg = document.getElementById('graph');
+    let box = null;
+    let start = null;
+
+    svg.addEventListener('mousedown', event => {
+      if (!event.shiftKey || event.target.closest('.node') || event.target.closest('.hit-area')) return;
+      event.preventDefault();
+      const [x, y] = graph.screenToCanvas(event.clientX, event.clientY);
+      start = { x, y };
+      box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      box.setAttribute('class', 'select-box');
+      document.getElementById('selection-layer').appendChild(box);
+    });
+
+    window.addEventListener('mousemove', event => {
+      if (!box || !start) return;
+      const [x, y] = graph.screenToCanvas(event.clientX, event.clientY);
+      box.setAttribute('x', Math.min(x, start.x));
+      box.setAttribute('y', Math.min(y, start.y));
+      box.setAttribute('width', Math.abs(x - start.x));
+      box.setAttribute('height', Math.abs(y - start.y));
+    });
+
+    window.addEventListener('mouseup', event => {
+      if (!box || !start) return;
+      const [x, y] = graph.screenToCanvas(event.clientX, event.clientY);
+      const x1 = Math.min(x, start.x);
+      const x2 = Math.max(x, start.x);
+      const y1 = Math.min(y, start.y);
+      const y2 = Math.max(y, start.y);
+      setSelected(state.getNodes().filter(node => node.x >= x1 && node.x <= x2 && node.y >= y1 && node.y <= y2).map(node => node.id));
+      box.remove();
+      box = null;
+      start = null;
+    });
+  }
+
+  function wireKeys() {
+    document.addEventListener('keydown', event => {
+      if (event.target.closest('.cm-editor') || event.target.tagName === 'INPUT') return;
+      if (event.key === 'Escape') {
+        clearSelection();
+        menu.hide();
+        document.getElementById('node-inline-input')?.remove();
+      }
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedIds.size) {
+        [...selectedIds].forEach(id => state.removeNode(id));
+        clearSelection();
+        graph.render();
+        search.update();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (state.undo()) {
+          clearSelection();
+          graph.render();
+          search.update();
+        }
+      }
+      if ((event.ctrlKey || event.metaKey) && (event.key === '=' || event.key === '+')) {
+        event.preventDefault();
+        graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1.25);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === '-') {
+        event.preventDefault();
+        graph.getSVG().transition().duration(180).call(graph.getZoom().scaleBy, 1 / 1.25);
+      }
+    });
+  }
+
+  function wireMenuActions() {
+    document.addEventListener('menu-action', event => {
+      const { action, target } = event.detail;
+      if (action === 'add-child') {
+        showInlineInput(window.innerWidth / 2, window.innerHeight / 2, (target.x ?? 0) + 90, (target.y ?? 0) + 70, target.id);
+      }
+      if (action === 'open-note') editor.open(target);
+      if (action === 'edit-label') {
+        const label = prompt('New label', target.label);
+        if (label?.trim()) {
+          state.updateNode(target.id, { label: label.trim() });
+          graph.render();
+          search.update();
+        }
+      }
+      if (action === 'change-colour') {
+        const color = prompt('Hex colour', target.color);
+        if (/^#[0-9a-f]{6}$/i.test(color || '')) {
+          state.updateNode(target.id, { color });
+          graph.render();
+        }
+      }
+      if (action === 'toggle-label-pin') {
+        state.updateNode(target.id, { pinnedLabel: !target.pinnedLabel });
+        graph.render();
+      }
+      if (action === 'delete-node') {
+        state.removeNode(target.id);
+        clearSelection();
+        graph.render();
+        search.update();
+      }
+      if (action === 'lock-edge') {
+        state.setEdgeLocked(target.id, true);
+        graph.render();
+      }
+      if (action === 'unlock-edge') {
+        state.setEdgeLocked(target.id, false);
+        graph.render();
+      }
+      if (action === 'delete-edge') {
+        state.removeEdge(target.id);
+        graph.render();
+      }
+      if (action === 'delete-selected') {
+        target.ids.forEach(id => state.removeNode(id));
+        clearSelection();
+        graph.render();
+        search.update();
+      }
+      if (action === 'lock-selected-edges' || action === 'unlock-selected-edges') {
+        const lock = action === 'lock-selected-edges';
+        state.getEdges()
+          .filter(edge => target.ids.includes(state.edgeEndpointId(edge.source)) || target.ids.includes(state.edgeEndpointId(edge.target)))
+          .forEach(edge => state.setEdgeLocked(edge.id, lock));
+        graph.render();
+      }
+    });
+  }
+
+  window.interactions = {
+    init,
+    toast,
+    focusNode,
+    clearSelection,
+    getSelectedIds: () => selectedIds,
+    getFocusedId: () => focusedId
+  };
+}());
