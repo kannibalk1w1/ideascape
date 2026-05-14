@@ -21,6 +21,10 @@
       background.setCustomImage(null);
       background.refresh();
     }
+    if (result.health?.issues?.length) {
+      interactions?.toast?.(`Vault opened with ${result.health.issues.length} health note(s)`);
+      console.warn('IdeaScape vault health notes:', result.health.issues);
+    }
     return result;
   }
 

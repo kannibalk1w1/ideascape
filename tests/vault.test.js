@@ -39,3 +39,85 @@ test('writeExport requires an explicit vault path', () => {
     dataUrl: `data:image/png;base64,${Buffer.from('png').toString('base64')}`
   }, 'png')).toThrow('Choose or save a vault before exporting.');
 });
+
+test('saveVault writes richer frontmatter and graph metadata atomically', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-vault-'));
+  const graph = {
+    version: 1,
+    settings: {},
+    nodes: [{
+      id: 'node-1',
+      label: 'Recovered Idea',
+      x: 12,
+      y: 34,
+      color: '#123456',
+      symbol: '*',
+      pinnedLabel: true,
+      skin: { type: 'planet', variant: 'rocky', seed: 7 },
+      markdown: '# Recovered Idea\n\nBody'
+    }],
+    edges: []
+  };
+
+  vault.saveVault({ vaultPath: dir, graph });
+  const note = fs.readFileSync(path.join(dir, 'notes', 'recovered-idea.md'), 'utf8');
+  expect(note).toContain('label: "Recovered Idea"');
+  expect(note).toContain('x: 12');
+  expect(note).toContain('skin: \'{"type":"planet","variant":"rocky","seed":7}\'');
+  expect(fs.existsSync(path.join(dir, '.ideascape', 'graph.json'))).toBe(true);
+  expect(fs.existsSync(path.join(dir, '.ideascape', 'graph.json.tmp'))).toBe(false);
+});
+
+test('openVault recovers nodes from markdown frontmatter if graph metadata is missing', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-recover-'));
+  fs.mkdirSync(path.join(dir, 'notes'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'notes', 'idea.md'), [
+    '---',
+    'id: "idea-1"',
+    'label: "Loose Idea"',
+    'color: "#abcdef"',
+    'symbol: "!"',
+    'pinnedLabel: true',
+    'x: 42',
+    'y: 84',
+    'skin: \'{"type":"planet","variant":"icy","seed":9}\'',
+    '---',
+    '# Loose Idea',
+    '',
+    'Body'
+  ].join('\n'));
+
+  const result = vault.openVault(dir);
+  expect(result.graph.recovered).toBe(true);
+  expect(result.graph.nodes[0]).toMatchObject({
+    id: 'idea-1',
+    label: 'Loose Idea',
+    color: '#abcdef',
+    symbol: '!',
+    pinnedLabel: true,
+    x: 42,
+    y: 84,
+    notePath: 'notes/idea.md',
+    skin: { type: 'planet', variant: 'icy', seed: 9 }
+  });
+  expect(result.health.issues).toContain('Graph metadata missing; recovered nodes from Markdown notes.');
+});
+
+test('checkVaultHealth reports missing notes and orphaned notes', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-health-'));
+  const graph = {
+    version: 1,
+    nodes: [{ id: 'missing', label: 'Missing', notePath: 'notes/missing.md' }],
+    edges: []
+  };
+  fs.mkdirSync(path.join(dir, '.ideascape'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'notes'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.ideascape', 'graph.json'), JSON.stringify(graph));
+  fs.writeFileSync(path.join(dir, 'notes', 'orphan.md'), '# Orphan');
+
+  const health = vault.checkVaultHealth(dir, graph);
+  expect(health.issues).toEqual(expect.arrayContaining([
+    'Missing note file: notes/missing.md',
+    'Orphaned note file: notes/orphan.md'
+  ]));
+});

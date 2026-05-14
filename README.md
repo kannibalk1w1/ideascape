@@ -14,6 +14,8 @@ The project is early and currently aimed at Windows tester builds.
 - Select multiple nodes with shift-drag.
 - Open each node as a Markdown note with basic formatting tools and image import.
 - Save/load idea maps as vault folders with Markdown notes and graph metadata.
+- Recover nodes from Markdown notes if graph metadata is missing.
+- Write richer note frontmatter so notes are easier to inspect outside IdeaScape.
 - Import and save colour palettes.
 - Use planet-style node skins, custom sprites, and descendant-based node evolution.
 - Enable starscape, comets, connector pulses, idle orbit, and screensaver view.

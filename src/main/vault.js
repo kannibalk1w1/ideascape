@@ -27,17 +27,49 @@ function frontmatter(node) {
   return [
     '---',
     `id: "${node.id}"`,
+    `label: "${escapeYaml(node.label || 'Untitled')}"`,
     `color: "${node.color}"`,
     `symbol: ${node.symbol ? `"${node.symbol}"` : 'null'}`,
     `iconPath: ${node.iconPath ? `"${node.iconPath}"` : 'null'}`,
     `pinnedLabel: ${node.pinnedLabel ? 'true' : 'false'}`,
+    `x: ${Number.isFinite(node.x) ? node.x : 0}`,
+    `y: ${Number.isFinite(node.y) ? node.y : 0}`,
+    `skin: '${JSON.stringify(node.skin || { type: 'circle' }).replace(/'/g, "''")}'`,
     '---',
     ''
   ].join('\n');
 }
 
+function escapeYaml(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 function stripFrontmatter(markdown) {
   return markdown.replace(/^---[\s\S]*?---\s*/, '');
+}
+
+function parseFrontmatter(markdown) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\s*/);
+  if (!match) return {};
+  return match[1].split(/\r?\n/).reduce((data, line) => {
+    const separator = line.indexOf(':');
+    if (separator === -1) return data;
+    const key = line.slice(0, separator).trim();
+    const raw = line.slice(separator + 1).trim();
+    data[key] = parseYamlValue(raw);
+    return data;
+  }, {});
+}
+
+function parseYamlValue(raw) {
+  if (raw === 'null') return null;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw);
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+    return raw.slice(1, -1).replace(/''/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  }
+  return raw;
 }
 
 function noteMarkdown(node, graph) {
@@ -78,7 +110,7 @@ function createVault(vaultPath) {
 function openVault(vaultPath) {
   const graphFile = path.join(vaultPath, GRAPH_PATH);
   const settingsFile = path.join(vaultPath, SETTINGS_PATH);
-  const graph = fs.existsSync(graphFile) ? JSON.parse(fs.readFileSync(graphFile, 'utf8')) : null;
+  const graph = fs.existsSync(graphFile) ? JSON.parse(fs.readFileSync(graphFile, 'utf8')) : recoverGraphFromNotes(vaultPath);
   const settings = fs.existsSync(settingsFile) ? JSON.parse(fs.readFileSync(settingsFile, 'utf8')) : {};
 
   if (graph) {
@@ -91,7 +123,9 @@ function openVault(vaultPath) {
     });
   }
 
-  return { vaultPath, graph, settings };
+  const health = checkVaultHealth(vaultPath, graph);
+  if (graph?.recovered) health.issues.unshift('Graph metadata missing; recovered nodes from Markdown notes.');
+  return { vaultPath, graph, settings, health };
 }
 
 function saveVault(payload) {
@@ -111,8 +145,87 @@ function saveVault(payload) {
     ...graph,
     nodes: graph.nodes.map(node => ({ ...node, markdown: undefined }))
   };
-  fs.writeFileSync(path.join(vaultPath, GRAPH_PATH), JSON.stringify(graphForDisk, null, 2), 'utf8');
+  writeJsonAtomic(path.join(vaultPath, GRAPH_PATH), graphForDisk);
   return { vaultPath, graph };
+}
+
+function writeJsonAtomic(filePath, data) {
+  const tmpPath = `${filePath}.tmp`;
+  fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+  fs.renameSync(tmpPath, filePath);
+}
+
+function recoverGraphFromNotes(vaultPath) {
+  const notesDir = path.join(vaultPath, 'notes');
+  if (!fs.existsSync(notesDir)) return null;
+  const files = listMarkdownFiles(notesDir);
+  if (files.length === 0) return null;
+  const nodes = files.map((file, index) => {
+    const markdown = fs.readFileSync(file, 'utf8');
+    const meta = parseFrontmatter(markdown);
+    const label = meta.label || path.basename(file, '.md');
+    return {
+      id: meta.id || `recovered-${index + 1}`,
+      label,
+      x: Number.isFinite(meta.x) ? meta.x : 120 + index * 80,
+      y: Number.isFinite(meta.y) ? meta.y : 120,
+      fx: null,
+      fy: null,
+      color: meta.color || '#a3e635',
+      symbol: meta.symbol || null,
+      iconPath: meta.iconPath || null,
+      pinnedLabel: Boolean(meta.pinnedLabel),
+      notePath: path.relative(vaultPath, file).replace(/\\/g, '/'),
+      markdown,
+      collapsed: false,
+      skin: parseSkin(meta.skin)
+    };
+  });
+  return { version: 1, recovered: true, settings: {}, nodes, edges: [], timeline: [] };
+}
+
+function listMarkdownFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) return listMarkdownFiles(fullPath);
+    return entry.isFile() && entry.name.toLowerCase().endsWith('.md') ? [fullPath] : [];
+  });
+}
+
+function parseSkin(value) {
+  if (!value) return { type: 'circle' };
+  try {
+    return JSON.parse(value);
+  } catch {
+    return { type: 'circle' };
+  }
+}
+
+function checkVaultHealth(vaultPath, graph) {
+  const issues = [];
+  if (!graph) {
+    issues.push('Graph metadata missing and no Markdown notes could be recovered.');
+    return { ok: false, issues };
+  }
+  const notePaths = new Set((graph.nodes || []).map(node => node.notePath).filter(Boolean).map(normaliseRelPath));
+  (graph.nodes || []).forEach(node => {
+    if (!node.id) issues.push(`Node missing id: ${node.label || 'Untitled'}`);
+    if (node.notePath && !fs.existsSync(path.join(vaultPath, node.notePath))) {
+      issues.push(`Missing note file: ${normaliseRelPath(node.notePath)}`);
+    }
+  });
+  const notesDir = path.join(vaultPath, 'notes');
+  if (fs.existsSync(notesDir)) {
+    listMarkdownFiles(notesDir).forEach(file => {
+      const rel = normaliseRelPath(path.relative(vaultPath, file));
+      if (!notePaths.has(rel)) issues.push(`Orphaned note file: ${rel}`);
+    });
+  }
+  return { ok: issues.length === 0, issues };
+}
+
+function normaliseRelPath(value) {
+  return String(value).replace(/\\/g, '/');
 }
 
 function importAsset(payload) {
@@ -150,4 +263,4 @@ function writeExport(payload, type) {
   return filePath;
 }
 
-module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, slugify, stripFrontmatter };
+module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, slugify, stripFrontmatter, parseFrontmatter, checkVaultHealth };
