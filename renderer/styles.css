@@ -29,7 +29,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -45,6 +46,15 @@ button {
 
 button:hover {
   border-color: var(--accent);
+}
+
+select {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 0 8px;
 }
 
 #canvas-shell {
@@ -106,7 +116,7 @@ button:hover {
   bottom: 16px;
   z-index: 45;
   display: grid;
-  grid-template-columns: auto minmax(180px, 420px) minmax(130px, 1fr) auto;
+  grid-template-columns: auto auto auto minmax(180px, 420px) minmax(130px, 1fr) auto;
   gap: 8px;
   align-items: center;
   width: min(720px, calc(100vw - 32px));

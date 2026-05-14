@@ -8,6 +8,8 @@
     document.getElementById('toggle-replay').addEventListener('click', open);
     document.getElementById('replay-close').addEventListener('click', close);
     document.getElementById('replay-play').addEventListener('click', togglePlay);
+    document.getElementById('export-replay-gif').addEventListener('click', () =>
+      exporter.exportReplayGif().catch(error => interactions.toast(error.message)));
     document.getElementById('replay-range').addEventListener('input', event => {
       stop();
       show(Number(event.target.value));
@@ -44,7 +46,11 @@
         return;
       }
       show(currentIndex + 1);
-    }, 650);
+    }, replayDelay());
+  }
+
+  function replayDelay() {
+    return Number(document.getElementById('replay-speed').value) || 650;
   }
 
   function stop() {
@@ -64,10 +70,28 @@
       document.getElementById('replay-label').textContent = 'No timeline yet';
       return;
     }
-    graph.setReplayFilter({ nodeIds: step.nodeIds, edgeIds: step.edgeIds });
-    document.getElementById('replay-label').textContent = `${currentIndex + 1}/${steps.length} ${step.label}`;
-    if (step.event.type === 'node') graph.pulseNode(step.event.nodeId);
+    showStep(step);
   }
 
-  window.replay = { init, open, close };
+  function showStep(step, pulse = true) {
+    graph.setReplayFilter({ nodeIds: step.nodeIds, edgeIds: step.edgeIds });
+    const position = steps.findIndex(item => item.index === step.index);
+    const stepNumber = position >= 0 ? position + 1 : step.index + 1;
+    document.getElementById('replay-label').textContent = `${stepNumber}/${steps.length || state.replaySteps().length} ${step.label}`;
+    if (pulse && step.event.type === 'node') graph.pulseNode(step.event.nodeId);
+  }
+
+  function isOpen() {
+    return !document.getElementById('replay-panel').classList.contains('hidden');
+  }
+
+  function currentStep() {
+    return steps[currentIndex] || null;
+  }
+
+  function delay() {
+    return replayDelay();
+  }
+
+  window.replay = { init, open, close, showStep, isOpen, currentStep, delay };
 }());

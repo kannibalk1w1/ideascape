@@ -549,6 +549,17 @@
     });
   }
 
+  function sampledReplaySteps(maxFrames = 80) {
+    const steps = replaySteps();
+    if (steps.length <= maxFrames) return steps;
+    const last = steps.length - 1;
+    const sampled = [];
+    for (let index = 0; index < maxFrames; index += 1) {
+      sampled.push(steps[Math.round(index * last / (maxFrames - 1))]);
+    }
+    return sampled.filter((step, index) => index === 0 || step.index !== sampled[index - 1].index);
+  }
+
   function setNodeSkin(id, skin) {
     return updateNode(id, { skin });
   }
@@ -592,6 +603,7 @@
     descendantCount,
     evolvedVariant,
     replaySteps,
+    sampledReplaySteps,
     edgeEndpointId,
     getVaultPath: () => activeVaultPath,
     setVaultPath: path => { activeVaultPath = path; }

@@ -123,6 +123,21 @@ test('replay steps track node and edge additions and persist with the graph', ()
   expect(state.replaySteps()).toHaveLength(3);
 });
 
+test('sampled replay steps preserve first and last timeline states', () => {
+  let parent = state.getNode('root');
+  for (let index = 0; index < 20; index += 1) {
+    const child = state.addNode({ label: `Step ${index}`, x: 0, y: 0 });
+    state.addEdge({ source: parent.id, target: child.id, kind: 'hierarchy' });
+    parent = child;
+  }
+
+  const all = state.replaySteps();
+  const sampled = state.sampledReplaySteps(8);
+  expect(sampled).toHaveLength(8);
+  expect(sampled[0].index).toBe(0);
+  expect(sampled.at(-1).index).toBe(all.at(-1).index);
+});
+
 test('updateNodeContent does not add graph undo snapshots', () => {
   const node = state.addNode({ label: 'Note', x: 0, y: 0 });
   state.updateNodeContent(node.id, '# Changed');

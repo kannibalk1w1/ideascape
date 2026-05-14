@@ -28,6 +28,12 @@
 
       <div id="replay-panel" class="hidden">
         <button id="replay-play">Play</button>
+        <button id="export-replay-gif">Replay GIF</button>
+        <select id="replay-speed" title="Replay speed">
+          <option value="1000">Slow</option>
+          <option value="650" selected>Normal</option>
+          <option value="320">Fast</option>
+        </select>
         <input id="replay-range" type="range" min="0" max="0" value="0">
         <span id="replay-label">No timeline yet</span>
         <button id="replay-close">Close</button>
