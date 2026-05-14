@@ -4,16 +4,20 @@
   const { GIFEncoder, quantize, applyPalette } = require('gifenc');
 
   async function exportPng() {
+    const vaultPath = await ensureVaultPath();
+    if (!vaultPath) return;
     const dataUrl = await htmlToImage.toPng(document.getElementById('canvas-shell'), {
       backgroundColor: '#101214',
       pixelRatio: 2,
       filter: exportFilter
     });
-    const saved = await ipcRenderer.invoke('export:png', { vaultPath: state.getVaultPath(), dataUrl });
+    const saved = await ipcRenderer.invoke('export:png', { vaultPath, dataUrl });
     interactions.toast(`PNG exported: ${saved}`);
   }
 
   async function exportGif() {
+    const vaultPath = await ensureVaultPath();
+    if (!vaultPath) return;
     const canvas = await htmlToImage.toCanvas(document.getElementById('canvas-shell'), {
       backgroundColor: '#101214',
       pixelRatio: 1,
@@ -29,11 +33,13 @@
     const bytes = gif.bytes();
     const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
     const dataUrl = `data:image/gif;base64,${btoa(binary)}`;
-    const saved = await ipcRenderer.invoke('export:gif', { vaultPath: state.getVaultPath(), dataUrl });
+    const saved = await ipcRenderer.invoke('export:gif', { vaultPath, dataUrl });
     interactions.toast(`GIF exported: ${saved}`);
   }
 
   async function exportReplayGif() {
+    const vaultPath = await ensureVaultPath();
+    if (!vaultPath) return;
     const steps = state.sampledReplaySteps(80);
     if (!steps.length) throw new Error('No replay timeline to export');
     interactions.toast(`Rendering replay GIF (${steps.length} frames)`);
@@ -65,8 +71,14 @@
     const bytes = gif.bytes();
     const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
     const dataUrl = `data:image/gif;base64,${btoa(binary)}`;
-    const saved = await ipcRenderer.invoke('export:gif', { vaultPath: state.getVaultPath(), dataUrl });
+    const saved = await ipcRenderer.invoke('export:gif', { vaultPath, dataUrl });
     interactions.toast(`Replay GIF exported: ${saved}`);
+  }
+
+  async function ensureVaultPath() {
+    if (state.getVaultPath()) return state.getVaultPath();
+    const result = await vaultClient.saveVault();
+    return result?.vaultPath || null;
   }
 
   function restoreReplayView(wasReplayOpen, previousStep) {

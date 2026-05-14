@@ -33,3 +33,9 @@ test('writeExport creates an exports folder with timestamped files', () => {
   expect(fs.existsSync(filePath)).toBe(true);
   expect(fs.readFileSync(filePath, 'utf8')).toBe('png');
 });
+
+test('writeExport requires an explicit vault path', () => {
+  expect(() => vault.writeExport({
+    dataUrl: `data:image/png;base64,${Buffer.from('png').toString('base64')}`
+  }, 'png')).toThrow('Choose or save a vault before exporting.');
+});

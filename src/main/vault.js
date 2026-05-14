@@ -139,8 +139,9 @@ function importSkinAsset(payload) {
 }
 
 function writeExport(payload, type) {
+  if (!payload.vaultPath) throw new Error('Choose or save a vault before exporting.');
   const extension = type === 'gif' ? 'gif' : 'png';
-  const exportDir = path.join(payload.vaultPath || process.cwd(), 'exports');
+  const exportDir = path.join(payload.vaultPath, 'exports');
   ensureDir(exportDir);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filePath = path.join(exportDir, `ideascape-${stamp}.${extension}`);
