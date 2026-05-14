@@ -17,6 +17,7 @@ The project is early and currently aimed at Windows tester builds.
 - Recover nodes from Markdown notes if graph metadata is missing.
 - Write richer note frontmatter so notes are easier to inspect outside IdeaScape.
 - Import and save colour palettes.
+- Save and apply visual themes for palette, universe, effects, orbit, screensaver, and node appearance settings.
 - Use planet-style node skins, custom sprites, and descendant-based node evolution.
 - Enable starscape, comets, connector pulses, idle orbit, and screensaver view.
 - Replay the graph build-up and export replay GIFs.

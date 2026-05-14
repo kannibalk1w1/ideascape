@@ -221,6 +221,35 @@ test('saved palettes persist in graph settings and can be activated or deleted',
   expect(state.deleteSavedPalette('default')).toBe(false);
 });
 
+test('theme presets can be saved, applied, deleted, and persisted', () => {
+  state.setPalette('Custom', ['#101010', '#202020'], false);
+  state.updateSettings({
+    background: { starDensity: 0.2, nebulaIntensity: 0.3 },
+    effects: { connectorKinetics: false },
+    skins: { mode: 'planets', rings: 'common' }
+  });
+  const saved = state.saveTheme('Custom Space');
+  expect(saved).toMatchObject({ id: 'theme-uuid-1', name: 'Custom Space' });
+
+  state.updateSettings({
+    background: { starDensity: 0.9 },
+    effects: { connectorKinetics: true },
+    skins: { mode: 'circles', rings: 'off' }
+  });
+  state.applyTheme(saved.id);
+  expect(state.getSettings().palette.colors).toEqual(['#101010', '#202020']);
+  expect(state.getSettings().background).toMatchObject({ starDensity: 0.2, nebulaIntensity: 0.3 });
+  expect(state.getSettings().effects.connectorKinetics).toBe(false);
+  expect(state.getSettings().skins).toMatchObject({ mode: 'planets', rings: 'common' });
+
+  const graph = state.cloneGraph();
+  state.initRoot(800, 600);
+  state.loadGraph(graph);
+  expect(state.getSettings().themes.library.find(theme => theme.id === saved.id).name).toBe('Custom Space');
+  expect(state.deleteTheme(saved.id)).toBe(true);
+  expect(state.deleteTheme('default')).toBe(false);
+});
+
 test('settings include screensaver defaults and merge loaded settings', () => {
   expect(state.getSettings().screensaver).toMatchObject({ enabled: true, idleSeconds: 45 });
   const graph = state.cloneGraph();

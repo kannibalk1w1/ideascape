@@ -58,8 +58,92 @@
           star: 30,
           blackHole: 50
         }
+      },
+      themes: {
+        activeId: 'default',
+        library: builtInThemes()
       }
     };
+  }
+
+  function builtInThemes() {
+    return [
+      themeDefinition('default', 'IdeaScape Default', {
+        palette: { name: 'IdeaScape Default', colors: [...PALETTE] },
+        background: defaultBackgroundSettings(),
+        effects: defaultEffectsSettings(),
+        orbit: { enabled: true, idleSeconds: 12, strength: 0.018 },
+        screensaver: { enabled: true, idleSeconds: 45 },
+        skins: defaultSkinSettings()
+      }),
+      themeDefinition('deep-space', 'Deep Space', {
+        palette: { name: 'Deep Space', colors: ['#67e8f9', '#818cf8', '#c084fc', '#f0abfc', '#22d3ee'] },
+        background: { ...defaultBackgroundSettings(), starDensity: 0.9, nebulaIntensity: 0.75, opacity: 1 },
+        effects: { connectorKinetics: true, shipsEnabled: true, shipFrequency: 0.35 },
+        orbit: { enabled: true, idleSeconds: 8, strength: 0.02 },
+        screensaver: { enabled: true, idleSeconds: 45 },
+        skins: { ...defaultSkinSettings(), mode: 'planets', rings: 'rare' }
+      }),
+      themeDefinition('solar-drift', 'Solar Drift', {
+        palette: { name: 'Solar Drift', colors: ['#facc15', '#fb923c', '#f97316', '#ef4444', '#fde68a'] },
+        background: { ...defaultBackgroundSettings(), starDensity: 0.55, nebulaIntensity: 0.35, cometBrightness: 0.9 },
+        effects: { connectorKinetics: true, shipsEnabled: true, shipFrequency: 0.2 },
+        orbit: { enabled: true, idleSeconds: 10, strength: 0.016 },
+        screensaver: { enabled: true, idleSeconds: 45 },
+        skins: { ...defaultSkinSettings(), mode: 'mixed', rings: 'common' }
+      }),
+      themeDefinition('quiet-map', 'Quiet Map', {
+        palette: { name: 'Quiet Map', colors: ['#e5e7eb', '#93c5fd', '#a7f3d0', '#fde68a', '#fca5a5'] },
+        background: { ...defaultBackgroundSettings(), starDensity: 0.25, nebulaIntensity: 0.12, cometsEnabled: false, opacity: 0.55 },
+        effects: { connectorKinetics: false, shipsEnabled: false, shipFrequency: 0 },
+        orbit: { enabled: false, idleSeconds: 12, strength: 0.018 },
+        screensaver: { enabled: false, idleSeconds: 45 },
+        skins: { ...defaultSkinSettings(), mode: 'circles', rings: 'off' }
+      })
+    ];
+  }
+
+  function defaultBackgroundSettings() {
+    return {
+      enabled: true,
+      mode: 'universe',
+      imagePath: null,
+      opacity: 0.9,
+      starDensity: 0.65,
+      nebulaIntensity: 0.55,
+      cometsEnabled: true,
+      cometFrequency: 0.35,
+      cometBrightness: 0.75
+    };
+  }
+
+  function defaultEffectsSettings() {
+    return {
+      connectorKinetics: true,
+      shipsEnabled: true,
+      shipFrequency: 0.25
+    };
+  }
+
+  function defaultSkinSettings() {
+    return {
+      mode: 'circles',
+      tintCustom: true,
+      rings: 'rare',
+      detail: 'medium',
+      evolutionEnabled: false,
+      evolutionThresholds: {
+        planetoid: 0,
+        rocky: 5,
+        gasGiant: 15,
+        star: 30,
+        blackHole: 50
+      }
+    };
+  }
+
+  function themeDefinition(id, name, values) {
+    return { id, name, builtIn: id !== 'default', ...values };
   }
 
   function uuid() {
@@ -110,7 +194,15 @@
     merged.effects = { ...defaults.effects, ...(loaded.effects || {}) };
     merged.skins = { ...defaults.skins, ...(loaded.skins || {}) };
     merged.skins.evolutionThresholds = { ...defaults.skins.evolutionThresholds, ...(loaded.skins?.evolutionThresholds || {}) };
+    merged.themes = { ...defaults.themes, ...(loaded.themes || {}) };
+    merged.themes.library = mergeThemeLibrary(defaults.themes.library, loaded.themes?.library || []);
     return merged;
+  }
+
+  function mergeThemeLibrary(defaults, loaded) {
+    const byId = new Map(defaults.map(theme => [theme.id, theme]));
+    loaded.forEach(theme => byId.set(theme.id, { ...theme }));
+    return [...byId.values()];
   }
 
   function restoreGraph(graph) {
@@ -537,6 +629,67 @@
     return true;
   }
 
+  function captureCurrentTheme(id, name, builtIn = false) {
+    return {
+      id,
+      name,
+      builtIn,
+      palette: {
+        name: settings.palette.name,
+        colors: [...settings.palette.colors]
+      },
+      background: JSON.parse(JSON.stringify(settings.background)),
+      effects: JSON.parse(JSON.stringify(settings.effects)),
+      orbit: JSON.parse(JSON.stringify(settings.orbit)),
+      screensaver: JSON.parse(JSON.stringify(settings.screensaver)),
+      skins: JSON.parse(JSON.stringify(settings.skins))
+    };
+  }
+
+  function saveTheme(name) {
+    if (!name?.trim()) return null;
+    snapshot();
+    const id = `theme-${uuid()}`;
+    const theme = captureCurrentTheme(id, name.trim());
+    settings.themes.library = [...settings.themes.library.filter(item => item.name !== theme.name), theme];
+    settings.themes.activeId = id;
+    return theme;
+  }
+
+  function applyTheme(id) {
+    const theme = settings.themes.library.find(item => item.id === id);
+    if (!theme) return null;
+    snapshot();
+    settings.palette = {
+      ...settings.palette,
+      activeId: null,
+      name: theme.palette.name,
+      colors: [...theme.palette.colors],
+      applyToExisting: false
+    };
+    settings.background = { ...settings.background, ...theme.background };
+    settings.effects = { ...settings.effects, ...theme.effects };
+    settings.orbit = { ...settings.orbit, ...theme.orbit };
+    settings.screensaver = { ...settings.screensaver, ...theme.screensaver };
+    settings.skins = {
+      ...settings.skins,
+      ...theme.skins,
+      evolutionThresholds: { ...settings.skins.evolutionThresholds, ...(theme.skins?.evolutionThresholds || {}) }
+    };
+    settings.themes.activeId = id;
+    paletteIndex = 0;
+    return theme;
+  }
+
+  function deleteTheme(id) {
+    const theme = settings.themes.library.find(item => item.id === id);
+    if (!theme || theme.builtIn || id === 'default') return false;
+    snapshot();
+    settings.themes.library = settings.themes.library.filter(item => item.id !== id);
+    if (settings.themes.activeId === id) settings.themes.activeId = 'default';
+    return true;
+  }
+
   function eligibleOrbitPairs() {
     const lockedIds = lockedNodeIds();
     return edges
@@ -656,6 +809,9 @@
     savePalette,
     useSavedPalette,
     deleteSavedPalette,
+    saveTheme,
+    applyTheme,
+    deleteTheme,
     randomPlanetSkin,
     setNodeSkin,
     descendantCount,

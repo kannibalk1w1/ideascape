@@ -9,6 +9,9 @@
     document.getElementById('save-palette').addEventListener('click', savePalette);
     document.getElementById('use-palette').addEventListener('click', usePalette);
     document.getElementById('delete-palette').addEventListener('click', deletePalette);
+    document.getElementById('save-theme').addEventListener('click', saveTheme);
+    document.getElementById('apply-theme').addEventListener('click', applyTheme);
+    document.getElementById('delete-theme').addEventListener('click', deleteTheme);
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
@@ -55,6 +58,10 @@
     document.getElementById('palette-name').value = settings.palette.name || '';
     document.getElementById('saved-palettes').innerHTML = settings.palette.library
       .map(item => `<option value="${item.id}"${item.id === settings.palette.activeId ? ' selected' : ''}>${escapeHtml(item.name)}</option>`)
+      .join('');
+    document.getElementById('theme-name').value = '';
+    document.getElementById('saved-themes').innerHTML = settings.themes.library
+      .map(item => `<option value="${item.id}"${item.id === settings.themes.activeId ? ' selected' : ''}>${escapeHtml(item.name)}${item.builtIn ? ' (built-in)' : ''}</option>`)
       .join('');
     renderSwatches();
   }
@@ -147,6 +154,37 @@
       render();
       graph.render();
       interactions.toast('Palette deleted');
+    }
+  }
+
+  function saveTheme() {
+    const name = document.getElementById('theme-name').value.trim();
+    const saved = state.saveTheme(name);
+    if (!saved) {
+      interactions.toast('Theme needs a name');
+      return;
+    }
+    render();
+    interactions.toast(`Saved theme: ${saved.name}`);
+  }
+
+  function applyTheme() {
+    const id = document.getElementById('saved-themes').value;
+    const theme = state.applyTheme(id);
+    if (!theme) return;
+    render();
+    skins.clearCache();
+    background.refresh();
+    graph.render();
+    interactions.resetActivityTimers();
+    interactions.toast(`Applied theme: ${theme.name}`);
+  }
+
+  function deleteTheme() {
+    const id = document.getElementById('saved-themes').value;
+    if (state.deleteTheme(id)) {
+      render();
+      interactions.toast('Theme deleted');
     }
   }
 
