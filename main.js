@@ -71,6 +71,18 @@ ipcMain.handle('vault:chooseBackground', async () => {
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
 });
+ipcMain.handle('vault:chooseSkinAsset', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose a node skin sprite',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Tintable sprites', extensions: ['png', 'jpg', 'jpeg', 'webp', 'svg'] }
+    ]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
 ipcMain.handle('vault:importAsset', async (_event, payload) => vault.importAsset(payload));
+ipcMain.handle('vault:importSkinAsset', async (_event, payload) => vault.importSkinAsset(payload));
 ipcMain.handle('export:png', async (_event, payload) => vault.writeExport(payload, 'png'));
 ipcMain.handle('export:gif', async (_event, payload) => vault.writeExport(payload, 'gif'));

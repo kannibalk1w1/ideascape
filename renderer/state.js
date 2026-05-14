@@ -35,6 +35,12 @@
       screensaver: {
         enabled: true,
         idleSeconds: 45
+      },
+      skins: {
+        mode: 'circles',
+        tintCustom: true,
+        rings: 'rare',
+        detail: 'medium'
       }
     };
   }
@@ -108,7 +114,8 @@
       pinnedLabel: true,
       notePath: 'notes/root.md',
       markdown: '# My Ideascape\n\n',
-      collapsed: false
+      collapsed: false,
+      skin: { type: 'circle' }
     }];
     edges = [];
     undoStack = [];
@@ -117,13 +124,14 @@
   }
 
   function loadGraph(graph) {
-    nodes = graph.nodes.map(node => ({ collapsed: false, ...node }));
+    nodes = graph.nodes.map(node => ({ collapsed: false, skin: { type: 'circle' }, ...node }));
     edges = graph.edges.map(edge => normaliseEdge({ kind: 'association', ...edge }));
     settings = { ...defaultSettings(), ...(graph.settings || {}) };
     settings.palette = { ...defaultSettings().palette, ...(graph.settings?.palette || {}) };
     settings.background = { ...defaultSettings().background, ...(graph.settings?.background || {}) };
     settings.orbit = { ...defaultSettings().orbit, ...(graph.settings?.orbit || {}) };
     settings.screensaver = { ...defaultSettings().screensaver, ...(graph.settings?.screensaver || {}) };
+    settings.skins = { ...defaultSettings().skins, ...(graph.settings?.skins || {}) };
     undoStack = [];
     syncPins();
   }
@@ -143,7 +151,8 @@
       pinnedLabel: false,
       notePath: null,
       markdown: markdown || `# ${label || 'Untitled'}\n\n`,
-      collapsed: false
+      collapsed: false,
+      skin: defaultNodeSkin()
     };
     nodes.push(node);
     return node;
@@ -334,7 +343,8 @@
       palette: { ...settings.palette, ...(patch.palette || {}) },
       background: { ...settings.background, ...(patch.background || {}) },
       orbit: { ...settings.orbit, ...(patch.orbit || {}) },
-      screensaver: { ...settings.screensaver, ...(patch.screensaver || {}) }
+      screensaver: { ...settings.screensaver, ...(patch.screensaver || {}) },
+      skins: { ...settings.skins, ...(patch.skins || {}) }
     };
     return settings;
   }
@@ -370,6 +380,26 @@
       .filter(Boolean);
   }
 
+  function defaultNodeSkin() {
+    if (settings.skins.mode === 'planets' || settings.skins.mode === 'mixed') {
+      return randomPlanetSkin();
+    }
+    return { type: 'circle' };
+  }
+
+  function randomPlanetSkin() {
+    const variants = ['cratered', 'rocky', 'ringed', 'icy', 'marble', 'asteroid'];
+    return {
+      type: 'planet',
+      variant: variants[Math.floor(Math.random() * variants.length)],
+      seed: Math.floor(Math.random() * 1000000)
+    };
+  }
+
+  function setNodeSkin(id, skin) {
+    return updateNode(id, { skin });
+  }
+
   const api = {
     getNodes: () => nodes,
     getEdges: () => edges,
@@ -400,6 +430,8 @@
     getSettings: () => settings,
     updateSettings,
     setPalette,
+    randomPlanetSkin,
+    setNodeSkin,
     edgeEndpointId,
     getVaultPath: () => activeVaultPath,
     setVaultPath: path => { activeVaultPath = path; }

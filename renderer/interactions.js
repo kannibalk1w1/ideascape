@@ -94,6 +94,11 @@
         { label: 'Change colour', action: 'change-colour' },
         { label: node.pinnedLabel ? 'Allow label hiding' : 'Always show label', action: 'toggle-label-pin' },
         'sep',
+        { label: 'Use circle skin', action: 'skin-circle' },
+        { label: 'Use planet skin', action: 'skin-planet' },
+        { label: 'Randomize planet', action: 'skin-randomize' },
+        { label: 'Import custom sprite', action: 'skin-custom' },
+        'sep',
         { label: node.collapsed ? 'Expand branch' : 'Collapse branch', action: 'toggle-collapse' },
         { label: 'Select branch', action: 'select-branch' },
         { label: 'Arrange branch', action: 'arrange-branch' },
@@ -368,6 +373,18 @@
         state.updateNode(target.id, { pinnedLabel: !target.pinnedLabel });
         graph.render();
       }
+      if (action === 'skin-circle') {
+        state.setNodeSkin(target.id, { type: 'circle' });
+        graph.render();
+      }
+      if (action === 'skin-planet' || action === 'skin-randomize') {
+        state.setNodeSkin(target.id, state.randomPlanetSkin());
+        skins.clearCache();
+        graph.render();
+      }
+      if (action === 'skin-custom') {
+        importCustomSkin(target).catch(error => toast(error.message));
+      }
       if (action === 'toggle-collapse') {
         state.toggleCollapsed(target.id);
         graph.render();
@@ -437,6 +454,22 @@
         graph.render();
       }
     });
+  }
+
+  async function importCustomSkin(node) {
+    const { ipcRenderer } = require('electron');
+    let vaultPath = state.getVaultPath();
+    if (!vaultPath) {
+      const result = await vaultClient.saveVault();
+      vaultPath = result?.vaultPath;
+    }
+    if (!vaultPath) return;
+    const sourcePath = await ipcRenderer.invoke('vault:chooseSkinAsset');
+    if (!sourcePath) return;
+    const relPath = await ipcRenderer.invoke('vault:importSkinAsset', { vaultPath, sourcePath });
+    state.setNodeSkin(node.id, { type: 'custom', path: relPath });
+    graph.render();
+    toast('Custom node sprite imported');
   }
 
   window.interactions = {

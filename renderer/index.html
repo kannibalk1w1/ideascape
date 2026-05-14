@@ -68,6 +68,32 @@
           <label class="check-row"><input id="screensaver-enabled" type="checkbox"> Hide interface when idle</label>
           <label>Idle seconds <input id="screensaver-idle" type="number" min="30" max="60" step="1"></label>
         </section>
+
+        <section>
+          <h3>Node Appearance</h3>
+          <label>Mode
+            <select id="skin-mode">
+              <option value="circles">Simple circles</option>
+              <option value="planets">Tinted planets</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </label>
+          <label>Planet detail
+            <select id="skin-detail">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label>Rings
+            <select id="skin-rings">
+              <option value="off">Off</option>
+              <option value="rare">Rare</option>
+              <option value="common">Common</option>
+            </select>
+          </label>
+          <label class="check-row"><input id="tint-custom-skins" type="checkbox"> Tint custom sprites</label>
+        </section>
       </aside>
 
       <div id="search-panel">
@@ -123,6 +149,7 @@
   <script src="./state.js"></script>
   <script src="./palette.js"></script>
   <script src="./background.js"></script>
+  <script src="./skins.js"></script>
   <script src="./vault-client.js"></script>
   <script src="./graph.js"></script>
   <script src="./menu.js"></script>

@@ -272,6 +272,11 @@ button:hover {
   stroke-width: 1.5;
 }
 
+.node-skin {
+  pointer-events: none;
+  overflow: visible;
+}
+
 .node.selected .node-circle {
   stroke: #fff;
   stroke-width: 2.5;

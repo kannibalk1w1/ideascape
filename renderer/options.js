@@ -9,7 +9,7 @@
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
-    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle']
+    ['background-enabled', 'star-density', 'nebula-intensity', 'background-opacity', 'comets-enabled', 'comet-frequency', 'comet-brightness', 'orbit-enabled', 'orbit-idle', 'screensaver-enabled', 'screensaver-idle', 'skin-mode', 'skin-detail', 'skin-rings', 'tint-custom-skins']
       .forEach(id => document.getElementById(id).addEventListener('input', syncFromControls));
 
     render();
@@ -37,6 +37,10 @@
     document.getElementById('orbit-idle').value = settings.orbit.idleSeconds;
     document.getElementById('screensaver-enabled').checked = settings.screensaver.enabled;
     document.getElementById('screensaver-idle').value = settings.screensaver.idleSeconds;
+    document.getElementById('skin-mode').value = settings.skins.mode;
+    document.getElementById('skin-detail').value = settings.skins.detail;
+    document.getElementById('skin-rings').value = settings.skins.rings;
+    document.getElementById('tint-custom-skins').checked = settings.skins.tintCustom;
     renderSwatches();
   }
 
@@ -64,9 +68,17 @@
       screensaver: {
         enabled: document.getElementById('screensaver-enabled').checked,
         idleSeconds: Number(document.getElementById('screensaver-idle').value)
+      },
+      skins: {
+        mode: document.getElementById('skin-mode').value,
+        detail: document.getElementById('skin-detail').value,
+        rings: document.getElementById('skin-rings').value,
+        tintCustom: document.getElementById('tint-custom-skins').checked
       }
     });
     background.refresh();
+    skins.clearCache();
+    graph.render();
     interactions.resetActivityTimers();
   }
 

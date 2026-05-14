@@ -5,6 +5,7 @@
   let svgEdges;
   let svgNodes;
   let svgSelection;
+  let svgDefs;
   let idle = false;
   let dragPause = false;
 
@@ -14,6 +15,7 @@
     svgEdges = d3.select('#edges');
     svgNodes = d3.select('#nodes');
     svgSelection = d3.select('#selection-layer');
+    svgDefs = d3.select('#graph defs');
 
     zoom = d3.zoom()
       .scaleExtent([0.12, 4])
@@ -108,14 +110,28 @@
       .call(nodeDrag());
 
     entered.append('circle').attr('class', 'node-circle');
+    entered.append('image').attr('class', 'node-skin');
     entered.append('text').attr('class', 'node-symbol');
     entered.append('text').attr('class', 'node-label');
 
     const all = entered.merge(groups);
     all.classed('selected', node => window.interactions?.getSelectedIds().has(node.id));
-    all.select('.node-circle')
-      .attr('r', node => node.id === 'root' ? 22 : 15)
-      .attr('fill', node => node.color);
+    all.each(function (node) {
+      const group = d3.select(this);
+      const url = nodeSkinUrl(node);
+      group.select('.node-circle')
+        .attr('r', node.id === 'root' ? 22 : 15)
+        .attr('fill', node.color)
+        .style('display', url ? 'none' : '');
+      group.select('.node-skin')
+        .attr('href', url || '')
+        .attr('x', node.id === 'root' ? -26 : -21)
+        .attr('y', node.id === 'root' ? -26 : -21)
+        .attr('width', node.id === 'root' ? 52 : 42)
+        .attr('height', node.id === 'root' ? 52 : 42)
+        .style('display', url ? '' : 'none')
+        .attr('filter', node.skin?.type === 'custom' && state.getSettings().skins.tintCustom ? ensureTintFilter(node) : null);
+    });
     all.select('.node-symbol')
       .text(node => node.symbol || '')
       .attr('fill', '#0d0f12');
@@ -128,6 +144,45 @@
 
     groups.exit().remove();
     updateLabelVisibility();
+  }
+
+  function nodeSkinUrl(node) {
+    const mode = state.getSettings().skins.mode;
+    if (node.skin?.type === 'custom' || node.skin?.type === 'planet') return skins.skinUrl(node);
+    if (mode === 'planets' && node.id !== 'root') {
+      return skins.skinUrl({ ...node, skin: virtualPlanetSkin(node, 0) });
+    }
+    if (mode === 'mixed' && node.id !== 'root') {
+      const seeded = Number.parseInt(node.id.replace(/\D/g, '').slice(-4), 10) || node.id.length;
+      if (seeded % 2 === 0) {
+        return skins.skinUrl({ ...node, skin: virtualPlanetSkin(node, seeded) });
+      }
+    }
+    return null;
+  }
+
+  function ensureTintFilter(node) {
+    const id = `tint-${node.id.replace(/[^a-z0-9_-]/gi, '')}`;
+    let filter = svgDefs.select(`#${id}`);
+    if (filter.empty()) {
+      filter = svgDefs.append('filter').attr('id', id);
+      filter.append('feFlood').attr('result', 'tint');
+      filter.append('feComposite').attr('in', 'tint').attr('in2', 'SourceAlpha').attr('operator', 'in').attr('result', 'tintShape');
+      filter.append('feBlend').attr('in', 'SourceGraphic').attr('in2', 'tintShape').attr('mode', 'multiply');
+    }
+    filter.select('feFlood').attr('flood-color', node.color).attr('flood-opacity', 0.72);
+    return `url(#${id})`;
+  }
+
+  function virtualPlanetSkin(node, offset) {
+    const variants = ['cratered', 'rocky', 'ringed', 'icy', 'marble', 'asteroid'];
+    let hash = offset || 0;
+    for (let i = 0; i < node.id.length; i += 1) hash = (hash * 31 + node.id.charCodeAt(i)) % 1000000;
+    return {
+      type: 'planet',
+      variant: variants[hash % variants.length],
+      seed: hash || 1
+    };
   }
 
   function updateLabelVisibility() {

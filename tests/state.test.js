@@ -130,6 +130,15 @@ test('settings include screensaver defaults and merge loaded settings', () => {
   expect(state.getSettings().orbit).toMatchObject({ enabled: true, idleSeconds: 8 });
 });
 
+test('new nodes follow node skin mode settings', () => {
+  state.updateSettings({ skins: { mode: 'planets' } });
+  const node = state.addNode({ label: 'Planet', x: 0, y: 0 });
+  expect(node.skin.type).toBe('planet');
+
+  state.setNodeSkin(node.id, { type: 'circle' });
+  expect(state.getNode(node.id).skin.type).toBe('circle');
+});
+
 test('eligibleOrbitPairs returns floating children of locked parents only', () => {
   const parent = state.addNode({ label: 'Parent', x: 100, y: 100 });
   const child = state.addNode({ label: 'Child', x: 160, y: 100 });

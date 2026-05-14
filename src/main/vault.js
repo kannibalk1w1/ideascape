@@ -126,6 +126,18 @@ function importAsset(payload) {
   return relPath.replace(/\\/g, '/');
 }
 
+function importSkinAsset(payload) {
+  const sourcePath = payload.sourcePath;
+  const vaultPath = payload.vaultPath;
+  const skinDir = path.join(vaultPath, '.ideascape', 'skins', 'user');
+  ensureDir(skinDir);
+  const ext = path.extname(sourcePath);
+  const name = `${Date.now()}-${path.basename(sourcePath, ext).replace(/[^a-z0-9_-]+/gi, '-')}${ext}`;
+  const relPath = path.join('.ideascape', 'skins', 'user', name);
+  fs.copyFileSync(sourcePath, path.join(vaultPath, relPath));
+  return relPath.replace(/\\/g, '/');
+}
+
 function writeExport(payload, type) {
   const defaultName = type === 'gif' ? 'ideascape.gif' : 'ideascape.png';
   const exportDir = payload.vaultPath || process.cwd();
@@ -135,4 +147,4 @@ function writeExport(payload, type) {
   return filePath;
 }
 
-module.exports = { createVault, openVault, saveVault, importAsset, writeExport, slugify, stripFrontmatter };
+module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, slugify, stripFrontmatter };
