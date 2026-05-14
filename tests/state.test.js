@@ -19,6 +19,16 @@ test('initRoot creates a pinned centre node', () => {
   });
 });
 
+test('loadSampleGraph creates a replayable tester graph with planets enabled', () => {
+  state.loadSampleGraph(1000, 700);
+  expect(state.getNodes().length).toBeGreaterThan(8);
+  expect(state.getEdges().length).toBeGreaterThan(8);
+  expect(state.getSettings().skins.mode).toBe('planets');
+  expect(state.getSettings().skins.evolutionEnabled).toBe(true);
+  expect(state.replaySteps().length).toBeGreaterThan(10);
+  expect(state.getEdges().some(edge => edge.locked)).toBe(true);
+});
+
 test('addNode creates a floating node with markdown', () => {
   const node = state.addNode({ label: 'Game Loop', x: 10, y: 20 });
   expect(node.label).toBe('Game Loop');

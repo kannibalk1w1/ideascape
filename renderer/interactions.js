@@ -166,6 +166,16 @@
         toast('Vault saved');
       }
     });
+    document.getElementById('load-sample').addEventListener('click', () => {
+      state.loadSampleGraph(window.innerWidth, window.innerHeight);
+      clearSelection();
+      skins.clearCache();
+      graph.render();
+      search.update();
+      mindmap.renderOutline();
+      graph.fitView();
+      toast('Sample idea map loaded');
+    });
 
     document.getElementById('graph').addEventListener('contextmenu', event => {
       event.preventDefault();

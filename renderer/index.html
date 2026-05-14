@@ -20,10 +20,12 @@
         <button id="new-vault">New vault</button>
         <button id="open-vault">Open vault</button>
         <button id="save-vault">Save</button>
+        <button id="load-sample">Sample</button>
         <button id="export-png">PNG</button>
         <button id="export-gif">GIF</button>
         <button id="toggle-replay">Replay</button>
         <button id="toggle-options">Options</button>
+        <button id="show-about">About</button>
       </div>
 
       <div id="replay-panel" class="hidden">
@@ -177,6 +179,19 @@
     </aside>
 
     <div id="context-menu"></div>
+    <dialog id="about-dialog">
+      <header>
+        <h2>IdeaScape</h2>
+        <button id="close-about" title="Close">Close</button>
+      </header>
+      <p id="about-version">Version</p>
+      <p>A physics-driven idea map with Markdown notes, replay exports, palette tools, and Obsidian-style vault storage.</p>
+      <ul>
+        <li>Double-click or right-click the canvas to add nodes.</li>
+        <li>Right-click nodes and connectors for editing tools.</li>
+        <li>Use Replay to preview and export the idea map build-up.</li>
+      </ul>
+    </dialog>
     <div id="toast" aria-live="polite"></div>
   </main>
 
@@ -194,6 +209,7 @@
   <script src="./options.js"></script>
   <script src="./exporter.js"></script>
   <script src="./replay.js"></script>
+  <script src="./about.js"></script>
   <script src="./interactions.js"></script>
   <script src="./app.js"></script>
 </body>

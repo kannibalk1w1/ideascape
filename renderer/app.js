@@ -8,6 +8,7 @@
     options.init();
     exporter.init();
     replay.init();
+    about.init();
     interactions.init();
   });
 }());

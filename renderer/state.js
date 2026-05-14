@@ -201,6 +201,38 @@
     settings = defaultSettings();
   }
 
+  function loadSampleGraph(width = window.innerWidth, height = window.innerHeight) {
+    initRoot(width, height);
+    updateSettings({
+      skins: { mode: 'planets', evolutionEnabled: true },
+      effects: { connectorKinetics: true, shipsEnabled: true },
+      orbit: { enabled: true, idleSeconds: 8 }
+    });
+    undoStack = [];
+    redoStack = [];
+    const root = getNode('root');
+    const ideas = addNode({ label: 'Game Prototype', x: root.x - 230, y: root.y - 90 });
+    const art = addNode({ label: 'Visual Atmosphere', x: root.x + 230, y: root.y - 90 });
+    const notes = addNode({ label: 'Research Notes', x: root.x - 80, y: root.y + 170 });
+    const exports = addNode({ label: 'Shareable Replay', x: root.x + 220, y: root.y + 140 });
+    addEdge({ source: 'root', target: ideas.id, kind: 'hierarchy', locked: true });
+    addEdge({ source: 'root', target: art.id, kind: 'hierarchy' });
+    addEdge({ source: 'root', target: notes.id, kind: 'hierarchy' });
+    addEdge({ source: ideas.id, target: exports.id, kind: 'hierarchy', style: 'thick' });
+    addEdge({ source: art.id, target: exports.id, kind: 'association', style: 'dotted', direction: 'forward' });
+    ['Loop', 'Controls', 'Feedback'].forEach((label, index) => {
+      const child = addNode({ label, x: ideas.x - 70 + index * 70, y: ideas.y - 130 });
+      addEdge({ source: ideas.id, target: child.id, kind: 'hierarchy' });
+    });
+    ['Palette', 'Planets', 'Comets'].forEach((label, index) => {
+      const child = addNode({ label, x: art.x - 70 + index * 70, y: art.y - 130 });
+      addEdge({ source: art.id, target: child.id, kind: 'hierarchy' });
+    });
+    undoStack = [];
+    redoStack = [];
+    syncPins();
+  }
+
   function loadGraph(graph) {
     restoreGraph(graph);
     undoStack = [];
@@ -568,6 +600,7 @@
     getNodes: () => nodes,
     getEdges: () => edges,
     initRoot,
+    loadSampleGraph,
     loadGraph,
     cloneGraph,
     addNode,
