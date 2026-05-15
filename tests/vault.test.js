@@ -40,6 +40,16 @@ test('writeExport requires an explicit vault path', () => {
   }, 'png')).toThrow('Choose or save a vault before exporting.');
 });
 
+test('writeThemePack creates a shareable theme json file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-theme-'));
+  const filePath = vault.writeThemePack({
+    vaultPath: dir,
+    pack: { type: 'ideascape-theme', version: 1, theme: { name: 'Solar Drift' } }
+  });
+  expect(filePath).toMatch(/\.ideascape[\\/]+themes[\\/]+solar-drift\.json$/);
+  expect(JSON.parse(fs.readFileSync(filePath, 'utf8')).theme.name).toBe('Solar Drift');
+});
+
 test('saveVault writes richer frontmatter and graph metadata atomically', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-vault-'));
   const graph = {

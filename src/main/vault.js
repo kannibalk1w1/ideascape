@@ -263,4 +263,25 @@ function writeExport(payload, type) {
   return filePath;
 }
 
-module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, slugify, stripFrontmatter, parseFrontmatter, checkVaultHealth };
+function writeThemePack(payload) {
+  if (!payload.vaultPath) throw new Error('Choose or save a vault before exporting a theme.');
+  if (!payload.pack?.theme?.name) throw new Error('Theme pack needs a named theme.');
+  const themeDir = path.join(payload.vaultPath, '.ideascape', 'themes');
+  ensureDir(themeDir);
+  const filePath = path.join(themeDir, `${slugBase(payload.pack.theme.name)}.json`);
+  writeJsonAtomic(filePath, payload.pack);
+  return filePath;
+}
+
+function readJsonFile(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function slugBase(label) {
+  return String(label || 'theme')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'theme';
+}
+
+module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, writeThemePack, readJsonFile, slugify, stripFrontmatter, parseFrontmatter, checkVaultHealth };

@@ -17,7 +17,7 @@ The project is early and currently aimed at Windows tester builds.
 - Recover nodes from Markdown notes if graph metadata is missing.
 - Write richer note frontmatter so notes are easier to inspect outside IdeaScape.
 - Import and save colour palettes.
-- Save and apply visual themes for palette, universe, effects, orbit, screensaver, and node appearance settings.
+- Save, apply, import, and export visual themes for palette, universe, effects, orbit, screensaver, and node appearance settings.
 - Use planet-style node skins, custom sprites, and descendant-based node evolution.
 - Enable starscape, comets, connector pulses, idle orbit, and screensaver view.
 - Replay the graph build-up and export replay GIFs.
@@ -101,4 +101,5 @@ release/             Generated builds, ignored by git
 - The public repo does not include generated builds.
 - Current packaging target is Windows portable only.
 - The app still uses the default Electron icon.
+- Exported theme packs are saved in `.ideascape/themes` inside the active vault.
 - Obsidian compatibility is a goal, but graph metadata currently lives in IdeaScape-specific vault data.

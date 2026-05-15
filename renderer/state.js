@@ -656,6 +656,56 @@
     return theme;
   }
 
+  function exportThemePack(id) {
+    const theme = settings.themes.library.find(item => item.id === id);
+    if (!theme) return null;
+    return {
+      type: 'ideascape-theme',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      theme: JSON.parse(JSON.stringify(theme))
+    };
+  }
+
+  function importThemePack(pack) {
+    const imported = normaliseThemePack(pack);
+    if (!imported) return null;
+    snapshot();
+    const id = `theme-${uuid()}`;
+    const theme = { ...imported, id, builtIn: false };
+    settings.themes.library = [...settings.themes.library.filter(item => item.name !== theme.name), theme];
+    settings.themes.activeId = id;
+    return theme;
+  }
+
+  function normaliseThemePack(pack) {
+    if (!pack || pack.type !== 'ideascape-theme' || !pack.theme) return null;
+    const defaults = captureCurrentTheme('theme-defaults', 'Imported Theme');
+    const source = pack.theme;
+    const colors = Array.isArray(source.palette?.colors)
+      ? source.palette.colors.filter(color => /^#[0-9a-f]{6}$/i.test(color))
+      : [];
+    if (!source.name?.trim() || colors.length === 0) return null;
+    return {
+      id: source.id || 'imported-theme',
+      name: source.name.trim(),
+      builtIn: false,
+      palette: {
+        name: source.palette?.name || source.name.trim(),
+        colors
+      },
+      background: { ...defaults.background, ...(source.background || {}) },
+      effects: { ...defaults.effects, ...(source.effects || {}) },
+      orbit: { ...defaults.orbit, ...(source.orbit || {}) },
+      screensaver: { ...defaults.screensaver, ...(source.screensaver || {}) },
+      skins: {
+        ...defaults.skins,
+        ...(source.skins || {}),
+        evolutionThresholds: { ...defaults.skins.evolutionThresholds, ...(source.skins?.evolutionThresholds || {}) }
+      }
+    };
+  }
+
   function applyTheme(id) {
     const theme = settings.themes.library.find(item => item.id === id);
     if (!theme) return null;
@@ -810,6 +860,8 @@
     useSavedPalette,
     deleteSavedPalette,
     saveTheme,
+    exportThemePack,
+    importThemePack,
     applyTheme,
     deleteTheme,
     randomPlanetSkin,

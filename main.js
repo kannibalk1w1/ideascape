@@ -82,8 +82,20 @@ ipcMain.handle('vault:chooseSkinAsset', async () => {
   if (result.canceled || result.filePaths.length === 0) return null;
   return result.filePaths[0];
 });
+ipcMain.handle('vault:chooseThemePack', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Import an IdeaScape theme pack',
+    properties: ['openFile'],
+    filters: [
+      { name: 'IdeaScape theme JSON', extensions: ['json'] }
+    ]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return vault.readJsonFile(result.filePaths[0]);
+});
 ipcMain.handle('vault:importAsset', async (_event, payload) => vault.importAsset(payload));
 ipcMain.handle('vault:importSkinAsset', async (_event, payload) => vault.importSkinAsset(payload));
+ipcMain.handle('theme:export', async (_event, payload) => vault.writeThemePack(payload));
 ipcMain.handle('export:capture-png', async (_event, payload) => {
   const image = await mainWindow.capturePage();
   return vault.writeExport({ ...payload, dataUrl: image.toDataURL() }, 'png');

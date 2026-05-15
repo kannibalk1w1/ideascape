@@ -12,6 +12,8 @@
     document.getElementById('save-theme').addEventListener('click', saveTheme);
     document.getElementById('apply-theme').addEventListener('click', applyTheme);
     document.getElementById('delete-theme').addEventListener('click', deleteTheme);
+    document.getElementById('export-theme').addEventListener('click', () => exportTheme().catch(error => interactions.toast(error.message)));
+    document.getElementById('import-theme').addEventListener('click', () => importTheme().catch(error => interactions.toast(error.message)));
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
@@ -186,6 +188,31 @@
       render();
       interactions.toast('Theme deleted');
     }
+  }
+
+  async function exportTheme() {
+    const vaultPath = await ensureVault();
+    if (!vaultPath) return;
+    const id = document.getElementById('saved-themes').value;
+    const pack = state.exportThemePack(id);
+    if (!pack) {
+      interactions.toast('Choose a theme to export');
+      return;
+    }
+    const saved = await ipcRenderer.invoke('theme:export', { vaultPath, pack });
+    interactions.toast(`Theme exported: ${saved}`);
+  }
+
+  async function importTheme() {
+    const pack = await ipcRenderer.invoke('vault:chooseThemePack');
+    if (!pack) return;
+    const theme = state.importThemePack(pack);
+    if (!theme) {
+      interactions.toast('That theme pack could not be imported');
+      return;
+    }
+    render();
+    interactions.toast(`Imported theme: ${theme.name}`);
   }
 
   function escapeHtml(value) {

@@ -30,6 +30,8 @@ Use `release/IdeaScape-0.1.0-win.zip` for early Windows testing. Unzip it and ru
 - Open `Options`.
 - Switch node appearance to `Tinted planets`.
 - Save a palette, reload it, and apply it to existing nodes.
+- Save a theme, export it, then confirm the JSON appears in the vault `.ideascape/themes` folder.
+- Import the exported theme JSON and confirm it appears in the theme list.
 - Toggle connector pulses, ships, comets, and screensaver settings.
 
 ## Known Rough Edges

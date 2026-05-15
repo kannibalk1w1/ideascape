@@ -250,6 +250,34 @@ test('theme presets can be saved, applied, deleted, and persisted', () => {
   expect(state.deleteTheme('default')).toBe(false);
 });
 
+test('theme packs can be exported and imported with a fresh local id', () => {
+  state.setPalette('Shareable', ['#112233', '#445566'], false);
+  state.updateSettings({
+    background: { starDensity: 0.4, cometsEnabled: false },
+    effects: { shipsEnabled: false },
+    skins: { mode: 'mixed', rings: 'rare' }
+  });
+  const saved = state.saveTheme('Shared Space');
+  const pack = state.exportThemePack(saved.id);
+
+  expect(pack).toMatchObject({
+    type: 'ideascape-theme',
+    version: 1,
+    theme: { name: 'Shared Space' }
+  });
+
+  state.deleteTheme(saved.id);
+  const imported = state.importThemePack(pack);
+  expect(imported).toMatchObject({ id: 'theme-uuid-2', name: 'Shared Space' });
+  expect(imported.builtIn).toBe(false);
+
+  state.applyTheme(imported.id);
+  expect(state.getSettings().palette.colors).toEqual(['#112233', '#445566']);
+  expect(state.getSettings().background).toMatchObject({ starDensity: 0.4, cometsEnabled: false });
+  expect(state.getSettings().effects.shipsEnabled).toBe(false);
+  expect(state.getSettings().skins).toMatchObject({ mode: 'mixed', rings: 'rare' });
+});
+
 test('settings include screensaver defaults and merge loaded settings', () => {
   expect(state.getSettings().screensaver).toMatchObject({ enabled: true, idleSeconds: 45 });
   const graph = state.cloneGraph();
