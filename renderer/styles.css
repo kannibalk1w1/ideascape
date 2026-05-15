@@ -108,6 +108,8 @@ select {
 #vault-controls {
   bottom: 16px;
   left: 16px;
+  max-width: calc(100vw - 32px);
+  flex-wrap: wrap;
 }
 
 #replay-panel {
@@ -474,6 +476,10 @@ select {
 #about-dialog h2,
 #about-dialog p {
   margin: 0 0 10px;
+}
+
+#about-dialog a {
+  color: var(--accent);
 }
 
 #about-dialog ul {

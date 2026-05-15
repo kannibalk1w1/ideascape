@@ -22,6 +22,7 @@ The project is early and currently aimed at Windows tester builds.
 - Enable starscape, comets, connector pulses, idle orbit, and screensaver view.
 - Replay the graph build-up and export replay GIFs.
 - Export PNG and GIF snapshots.
+- Open the active vault or exports folder from the tester toolbar.
 
 ## Requirements
 

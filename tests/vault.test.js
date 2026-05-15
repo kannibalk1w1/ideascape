@@ -34,6 +34,14 @@ test('writeExport creates an exports folder with timestamped files', () => {
   expect(fs.readFileSync(filePath, 'utf8')).toBe('png');
 });
 
+test('exportDir returns the vault exports folder path', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideascape-export-dir-'));
+  expect(vault.exportDir(dir)).toBe(path.join(dir, 'exports'));
+  expect(vault.ensureExportDir(dir)).toBe(path.join(dir, 'exports'));
+  expect(fs.existsSync(path.join(dir, 'exports'))).toBe(true);
+  expect(() => vault.exportDir()).toThrow('Choose or save a vault before opening exports.');
+});
+
 test('writeExport requires an explicit vault path', () => {
   expect(() => vault.writeExport({
     dataUrl: `data:image/png;base64,${Buffer.from('png').toString('base64')}`

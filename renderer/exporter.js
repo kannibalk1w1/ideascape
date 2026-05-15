@@ -6,7 +6,7 @@
     const vaultPath = await ensureVaultPath();
     if (!vaultPath) return;
     const saved = await withExportChromeHidden(() => ipcRenderer.invoke('export:capture-png', { vaultPath }));
-    interactions.toast(`PNG exported: ${saved}`);
+    interactions.toast(`PNG exported to exports: ${saved}`);
   }
 
   async function exportGif() {
@@ -17,7 +17,7 @@
       return encodeGif([frame], 1400);
     });
     const saved = await ipcRenderer.invoke('export:gif', { vaultPath, dataUrl });
-    interactions.toast(`GIF exported: ${saved}`);
+    interactions.toast(`GIF exported to exports: ${saved}`);
   }
 
   async function exportReplayGif() {
@@ -40,7 +40,7 @@
     }
     const dataUrl = encodeGif(frames, replay.delay());
     const saved = await ipcRenderer.invoke('export:gif', { vaultPath, dataUrl });
-    interactions.toast(`Replay GIF exported: ${saved}`);
+    interactions.toast(`Replay GIF exported to exports: ${saved}`);
   }
 
   async function ensureVaultPath() {

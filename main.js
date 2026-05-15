@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const vault = require('./src/main/vault');
 
@@ -49,6 +49,13 @@ ipcMain.handle('vault:open', async () => {
 });
 
 ipcMain.handle('vault:save', async (_event, payload) => vault.saveVault(payload));
+ipcMain.handle('vault:openFolder', async (_event, payload) => {
+  if (!payload?.vaultPath) throw new Error('Choose or save a vault before opening its folder.');
+  return shell.openPath(payload.vaultPath);
+});
+ipcMain.handle('vault:openExports', async (_event, payload) => {
+  return shell.openPath(vault.ensureExportDir(payload?.vaultPath));
+});
 ipcMain.handle('vault:chooseAsset', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Import image or GIF',

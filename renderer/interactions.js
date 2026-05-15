@@ -179,6 +179,16 @@
         toast('Vault saved');
       }
     });
+    document.getElementById('open-vault-folder').addEventListener('click', () => {
+      vaultClient.openVaultFolder()
+        .then(path => toast(`Opened vault folder: ${path}`))
+        .catch(error => toast(error.message));
+    });
+    document.getElementById('open-exports-folder').addEventListener('click', () => {
+      vaultClient.openExportsFolder()
+        .then(path => toast(`Opened exports folder: ${path}`))
+        .catch(error => toast(error.message));
+    });
     document.getElementById('load-sample').addEventListener('click', () => {
       state.loadSampleGraph(window.innerWidth, window.innerHeight);
       clearSelection();

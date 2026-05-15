@@ -254,13 +254,24 @@ function importSkinAsset(payload) {
 function writeExport(payload, type) {
   if (!payload.vaultPath) throw new Error('Choose or save a vault before exporting.');
   const extension = type === 'gif' ? 'gif' : 'png';
-  const exportDir = path.join(payload.vaultPath, 'exports');
-  ensureDir(exportDir);
+  const exportPath = exportDir(payload.vaultPath);
+  ensureDir(exportPath);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filePath = path.join(exportDir, `ideascape-${stamp}.${extension}`);
+  const filePath = path.join(exportPath, `ideascape-${stamp}.${extension}`);
   const data = payload.dataUrl.replace(/^data:[^;]+;base64,/, '');
   fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
   return filePath;
+}
+
+function exportDir(vaultPath) {
+  if (!vaultPath) throw new Error('Choose or save a vault before opening exports.');
+  return path.join(vaultPath, 'exports');
+}
+
+function ensureExportDir(vaultPath) {
+  const exportPath = exportDir(vaultPath);
+  ensureDir(exportPath);
+  return exportPath;
 }
 
 function writeThemePack(payload) {
@@ -284,4 +295,4 @@ function slugBase(label) {
     .replace(/^-+|-+$/g, '') || 'theme';
 }
 
-module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, writeThemePack, readJsonFile, slugify, stripFrontmatter, parseFrontmatter, checkVaultHealth };
+module.exports = { createVault, openVault, saveVault, importAsset, importSkinAsset, writeExport, exportDir, ensureExportDir, writeThemePack, readJsonFile, slugify, stripFrontmatter, parseFrontmatter, checkVaultHealth };

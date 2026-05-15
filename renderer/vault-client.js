@@ -40,5 +40,21 @@
     return result;
   }
 
-  window.vaultClient = { createVault, openVault, saveVault };
+  async function openVaultFolder() {
+    const vaultPath = state.getVaultPath();
+    if (!vaultPath) throw new Error('Choose or save a vault before opening its folder.');
+    const error = await ipcRenderer.invoke('vault:openFolder', { vaultPath });
+    if (error) throw new Error(error);
+    return vaultPath;
+  }
+
+  async function openExportsFolder() {
+    const vaultPath = state.getVaultPath();
+    if (!vaultPath) throw new Error('Choose or save a vault before opening exports.');
+    const error = await ipcRenderer.invoke('vault:openExports', { vaultPath });
+    if (error) throw new Error(error);
+    return `${vaultPath}\\exports`;
+  }
+
+  window.vaultClient = { createVault, openVault, saveVault, openVaultFolder, openExportsFolder };
 }());

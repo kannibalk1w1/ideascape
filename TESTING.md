@@ -15,6 +15,7 @@ Use `release/IdeaScape-0.1.0-win.zip` for early Windows testing. Unzip it and ru
 - Click `New vault` and choose an empty folder.
 - Add or edit a few nodes.
 - Click `Save`.
+- Click `Vault folder` and confirm the vault opens in Explorer.
 - Close and reopen the app, then use `Open vault` on the same folder.
 - Confirm nodes, notes, colours, and settings return.
 
@@ -22,6 +23,7 @@ Use `release/IdeaScape-0.1.0-win.zip` for early Windows testing. Unzip it and ru
 
 - Click `PNG` and confirm an image appears in the vault exports.
 - Exports are written to the vault's `exports` folder.
+- Click `Exports` and confirm the exports folder opens in Explorer.
 - Click `Replay`, use `Play`, `Prev`, `Next`, and the speed selector.
 - Click `Replay GIF` and confirm a GIF appears in the vault exports.
 
