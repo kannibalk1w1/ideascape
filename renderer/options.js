@@ -14,6 +14,9 @@
     document.getElementById('delete-theme').addEventListener('click', deleteTheme);
     document.getElementById('export-theme').addEventListener('click', () => exportTheme().catch(error => interactions.toast(error.message)));
     document.getElementById('import-theme').addEventListener('click', () => importTheme().catch(error => interactions.toast(error.message)));
+    document.getElementById('import-custom-skin').addEventListener('click', () => importCustomSkin().catch(error => interactions.toast(error.message)));
+    document.getElementById('apply-custom-skin').addEventListener('click', applyCustomSkin);
+    document.getElementById('delete-custom-skin').addEventListener('click', deleteCustomSkin);
     document.getElementById('choose-background').addEventListener('click', chooseBackground);
     document.getElementById('reset-background').addEventListener('click', resetBackground);
 
@@ -52,6 +55,10 @@
     document.getElementById('skin-detail').value = settings.skins.detail;
     document.getElementById('skin-rings').value = settings.skins.rings;
     document.getElementById('tint-custom-skins').checked = settings.skins.tintCustom;
+    document.getElementById('custom-skin-name').value = '';
+    document.getElementById('custom-skins').innerHTML = settings.skins.customLibrary
+      .map(item => `<option value="${item.id}">${escapeHtml(item.name)}</option>`)
+      .join('');
     document.getElementById('evolution-enabled').checked = settings.skins.evolutionEnabled;
     document.getElementById('evolve-rocky').value = settings.skins.evolutionThresholds.rocky;
     document.getElementById('evolve-gas').value = settings.skins.evolutionThresholds.gasGiant;
@@ -188,6 +195,50 @@
       render();
       interactions.toast('Theme deleted');
     }
+  }
+
+  async function importCustomSkin() {
+    const vaultPath = await ensureVault();
+    if (!vaultPath) return;
+    const sourcePath = await ipcRenderer.invoke('vault:chooseSkinAsset');
+    if (!sourcePath) return;
+    const relPath = await ipcRenderer.invoke('vault:importSkinAsset', { vaultPath, sourcePath });
+    const fallback = sourcePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || 'Custom sprite';
+    const name = document.getElementById('custom-skin-name').value.trim() || fallback;
+    const saved = state.saveCustomSkin(name, relPath);
+    render();
+    interactions.toast(`Imported sprite: ${saved.name}`);
+  }
+
+  function applyCustomSkin() {
+    const skinId = document.getElementById('custom-skins').value;
+    const ids = selectedOrFocusedNodeIds();
+    if (!skinId || !ids.length) {
+      interactions.toast('Select one or more nodes first');
+      return;
+    }
+    ids.forEach(id => state.applyCustomSkin(id, skinId));
+    skins.clearCache();
+    graph.render();
+    interactions.toast(`Applied sprite to ${ids.length} node${ids.length === 1 ? '' : 's'}`);
+  }
+
+  function deleteCustomSkin() {
+    const skinId = document.getElementById('custom-skins').value;
+    if (!skinId) return;
+    if (!state.deleteCustomSkin(skinId)) {
+      interactions.toast('Sprite is still used by a node');
+      return;
+    }
+    render();
+    interactions.toast('Sprite deleted');
+  }
+
+  function selectedOrFocusedNodeIds() {
+    const selected = [...(interactions.getSelectedIds?.() || [])];
+    if (selected.length) return selected;
+    const focused = interactions.getFocusedId?.();
+    return focused ? [focused] : [];
   }
 
   async function exportTheme() {

@@ -50,6 +50,7 @@
         tintCustom: true,
         rings: 'rare',
         detail: 'medium',
+        customLibrary: [],
         evolutionEnabled: false,
         evolutionThresholds: {
           planetoid: 0,
@@ -131,6 +132,7 @@
       tintCustom: true,
       rings: 'rare',
       detail: 'medium',
+      customLibrary: [],
       evolutionEnabled: false,
       evolutionThresholds: {
         planetoid: 0,
@@ -193,6 +195,7 @@
     merged.screensaver = { ...defaults.screensaver, ...(loaded.screensaver || {}) };
     merged.effects = { ...defaults.effects, ...(loaded.effects || {}) };
     merged.skins = { ...defaults.skins, ...(loaded.skins || {}) };
+    merged.skins.customLibrary = loaded.skins?.customLibrary || defaults.skins.customLibrary;
     merged.skins.evolutionThresholds = { ...defaults.skins.evolutionThresholds, ...(loaded.skins?.evolutionThresholds || {}) };
     merged.themes = { ...defaults.themes, ...(loaded.themes || {}) };
     merged.themes.library = mergeThemeLibrary(defaults.themes.library, loaded.themes?.library || []);
@@ -576,6 +579,7 @@
       skins: {
         ...settings.skins,
         ...(patch.skins || {}),
+        customLibrary: patch.skins?.customLibrary || settings.skins.customLibrary,
         evolutionThresholds: { ...settings.skins.evolutionThresholds, ...(patch.skins?.evolutionThresholds || {}) }
       }
     };
@@ -778,6 +782,33 @@
     return branchIds(id, false).length;
   }
 
+  function saveCustomSkin(name, path) {
+    if (!name?.trim() || !path) return null;
+    snapshot();
+    const saved = { id: `skin-${uuid()}`, name: name.trim(), path };
+    settings.skins.customLibrary = [
+      ...settings.skins.customLibrary.filter(item => item.name !== saved.name && item.path !== saved.path),
+      saved
+    ];
+    return saved;
+  }
+
+  function applyCustomSkin(nodeId, skinId) {
+    const saved = settings.skins.customLibrary.find(item => item.id === skinId);
+    if (!saved) return null;
+    return setNodeSkin(nodeId, { type: 'custom', path: saved.path, libraryId: saved.id });
+  }
+
+  function deleteCustomSkin(id) {
+    const saved = settings.skins.customLibrary.find(item => item.id === id);
+    const inUse = nodes.some(node => node.skin?.type === 'custom' && (node.skin.libraryId === id || node.skin.path === saved?.path));
+    if (inUse) return false;
+    snapshot();
+    const before = settings.skins.customLibrary.length;
+    settings.skins.customLibrary = settings.skins.customLibrary.filter(item => item.id !== id);
+    return settings.skins.customLibrary.length !== before;
+  }
+
   function evolvedVariant(id) {
     const count = descendantCount(id);
     const thresholds = settings.skins.evolutionThresholds;
@@ -865,6 +896,9 @@
     applyTheme,
     deleteTheme,
     randomPlanetSkin,
+    saveCustomSkin,
+    applyCustomSkin,
+    deleteCustomSkin,
     setNodeSkin,
     descendantCount,
     evolvedVariant,

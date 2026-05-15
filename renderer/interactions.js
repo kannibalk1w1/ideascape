@@ -550,8 +550,11 @@
     const sourcePath = await ipcRenderer.invoke('vault:chooseSkinAsset');
     if (!sourcePath) return;
     const relPath = await ipcRenderer.invoke('vault:importSkinAsset', { vaultPath, sourcePath });
-    state.setNodeSkin(node.id, { type: 'custom', path: relPath });
+    const name = sourcePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || 'Custom sprite';
+    const saved = state.saveCustomSkin(name, relPath);
+    state.setNodeSkin(node.id, { type: 'custom', path: relPath, libraryId: saved.id });
     graph.render();
+    options.render();
     toast('Custom node sprite imported');
   }
 

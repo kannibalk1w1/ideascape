@@ -32,6 +32,7 @@ Use `release/IdeaScape-0.1.0-win.zip` for early Windows testing. Unzip it and ru
 - Save a palette, reload it, and apply it to existing nodes.
 - Save a theme, export it, then confirm the JSON appears in the vault `.ideascape/themes` folder.
 - Import the exported theme JSON and confirm it appears in the theme list.
+- Import a custom sprite, select one or more nodes, and apply the saved sprite.
 - Toggle connector pulses, ships, comets, and screensaver settings.
 
 ## Known Rough Edges

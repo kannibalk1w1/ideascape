@@ -144,6 +144,19 @@
             </select>
           </label>
           <label class="check-row"><input id="tint-custom-skins" type="checkbox"> Tint custom sprites</label>
+          <label>Sprite name
+            <input id="custom-skin-name" type="text" placeholder="Moon sprite">
+          </label>
+          <div class="button-row">
+            <button id="import-custom-skin">Import sprite</button>
+          </div>
+          <label>Saved sprites
+            <select id="custom-skins"></select>
+          </label>
+          <div class="button-row">
+            <button id="apply-custom-skin">Apply to selected</button>
+            <button id="delete-custom-skin">Delete sprite</button>
+          </div>
           <label class="check-row"><input id="evolution-enabled" type="checkbox"> Auto-evolve by descendants</label>
           <label>Rocky planet at <input id="evolve-rocky" type="number" min="1" max="999"></label>
           <label>Gas giant at <input id="evolve-gas" type="number" min="1" max="999"></label>

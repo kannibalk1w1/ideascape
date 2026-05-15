@@ -296,6 +296,27 @@ test('new nodes follow node skin mode settings', () => {
   expect(state.getNode(node.id).skin.type).toBe('circle');
 });
 
+test('custom skin library persists and can be applied to nodes', () => {
+  const node = state.addNode({ label: 'Sprite Node', x: 0, y: 0 });
+  const saved = state.saveCustomSkin('Moon Sprite', '.ideascape/skins/user/moon.png');
+  expect(saved).toMatchObject({
+    id: expect.stringMatching(/^skin-uuid-\d+$/),
+    name: 'Moon Sprite',
+    path: '.ideascape/skins/user/moon.png'
+  });
+
+  expect(state.applyCustomSkin(node.id, saved.id)).toBeTruthy();
+  expect(state.getNode(node.id).skin).toEqual({ type: 'custom', path: saved.path, libraryId: saved.id });
+
+  const graph = state.cloneGraph();
+  state.initRoot(800, 600);
+  state.loadGraph(graph);
+  expect(state.getSettings().skins.customLibrary).toContainEqual(saved);
+  expect(state.deleteCustomSkin(saved.id)).toBe(false);
+  state.setNodeSkin(node.id, { type: 'circle' });
+  expect(state.deleteCustomSkin(saved.id)).toBe(true);
+});
+
 test('eligibleOrbitPairs returns floating children of locked parents only', () => {
   const parent = state.addNode({ label: 'Parent', x: 100, y: 100 });
   const child = state.addNode({ label: 'Child', x: 160, y: 100 });
